@@ -1,0 +1,5 @@
+---
+kea_dhcp::service::dhcp4_service_name: kea-dhcp4
+kea_dhcp::service::dhcp6_service_name: kea-dhcp6
+kea_dhcp::service::ddns_service_name: kea-dhcp-ddns
+kea_dhcp::service::ctrl_agent_service_name: kea-ctrl-agent
