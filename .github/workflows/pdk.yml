@@ -1,0 +1,59 @@
+name: PDK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  syntax:
+    name: Syntax Validation
+    runs-on: ubuntu-latest
+    container:
+      image: puppet/pdk:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate syntax and metadata
+        run: pdk validate
+
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: syntax
+    container:
+      image: puppet/pdk:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run unit test suite
+        run: pdk test unit
+
+  acceptance:
+    name: Acceptance Tests
+    runs-on: ubuntu-latest
+    needs: unit
+    env:
+      BUNDLE_WITH: system_tests
+      BUNDLE_PATH: vendor/bundle
+      LITMUS_BACKEND: docker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+      - name: Run acceptance suite
+        shell: bash
+        run: |
+          set -eo pipefail
+          if compgen -G "spec/acceptance/*_spec.rb" > /dev/null; then
+            bundle exec rake spec_prep
+            bundle exec rake 'litmus:acceptance:parallel'
+          else
+            echo "No acceptance tests found. Skipping acceptance suite."
+          fi

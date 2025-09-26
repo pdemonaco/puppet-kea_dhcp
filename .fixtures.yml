@@ -3,7 +3,24 @@
 ---
 fixtures:
   forge_modules:
-    stdlib: "puppetlabs/stdlib"
-    postgresql: "puppetlabs/postgresql"
-    systemd: "puppet/systemd"
-    concat: "puppetlabs/concat"
+    stdlib:
+      repo: 'puppetlabs/stdlib'
+      ref: '9.7.0'
+    postgresql:
+      repo: 'puppetlabs/postgresql'
+      ref: '10.5.0'
+    systemd:
+      repo: 'puppet/systemd'
+      ref: '9.0.1'
+    concat:
+      repo: 'puppetlabs/concat'
+      ref: '9.1.0'
+    yumrepo_core:
+      repo: 'puppetlabs/yumrepo_core'
+      ref: '2.1.0'
+    apt: # dependency of postgresql
+      repo: 'puppetlabs/apt'
+      ref: '10.0.1'
+    inifile: # dependency of systemd
+      repo: 'puppetlabs/inifile'
+      ref: '6.0.0'
