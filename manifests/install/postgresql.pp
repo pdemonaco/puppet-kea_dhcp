@@ -30,35 +30,35 @@ class kea_dhcp::config::postgresql (
     instance_user        => 'postgres',
     instance_group       => 'postgres',
     instance_directories => {
-      $instance_directory_root => {
+      $instance_directory_root               => {
         ensure => directory,
       },
-      "${instance_directory_root}/backup" => {
+      "${instance_directory_root}/backup"    => {
         ensure => directory,
       },
-      "${instance_directory_root}/data" => {
+      "${instance_directory_root}/data"      => {
         ensure => directory,
       },
-      $instance_data_dir => {
+      $instance_data_dir                     => {
         ensure => directory,
       },
       "${instance_directory_root}/data/home" => {
         ensure => directory,
       },
-      "${instance_directory_root}/wal" => {
+      "${instance_directory_root}/wal"       => {
         ensure => directory,
       },
-      "${instance_directory_root}/log" => {
+      "${instance_directory_root}/log"       => {
         ensure => directory,
       },
-      "${instance_directory_root}/log/16" => {
+      "${instance_directory_root}/log/16"    => {
         ensure => directory,
       },
-      $instance_log_dir => {
+      $instance_log_dir                      => {
         ensure => directory,
       },
     },
-    config_settings    => {
+    config_settings      => {
       pg_hba_conf_path     => "${instance_data_dir}/pg_hba.conf",
       postgresql_conf_path => "${instance_data_dir}/postgresql.conf",
       pg_ident_conf_path   => "${instance_data_dir}/pg_ident.conf",
@@ -66,13 +66,13 @@ class kea_dhcp::config::postgresql (
       service_name         => "postgresql-16-${instance_name}",
       port                 => '5433',
     },
-    service_settings   => {
+    service_settings     => {
       service_name   => "postgresql@16-${instance_name}",
       service_status => "systemctl status postgresql@16-${instance_name}.service",
       service_enable => true,
       service_ensure => 'running',
     },
-    inidb_settings     => {
+    inidb_settings       => {
       datadir => $instance_data_dir,
       group   => 'postgres',
       user    => 'postgres',
