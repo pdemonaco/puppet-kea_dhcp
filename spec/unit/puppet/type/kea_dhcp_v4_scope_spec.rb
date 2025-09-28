@@ -68,4 +68,28 @@ describe Puppet::Type.type(:kea_dhcp_v4_scope) do
 
     expect(resource[:options]).to eq([{ 'name' => 'routers', 'data' => '10.0.0.1' }])
   end
+
+  context 'when validating pools' do
+    it 'accepts CIDR and range entries with spaces around the hyphen' do
+      resource = described_class.new(
+        name: 'valid_pools',
+        subnet: '10.0.0.0/24',
+        pools: ['10.0.0.0/28', '10.0.0.32 - 10.0.0.63'],
+      )
+
+      expect(resource[:pools]).to match_array(['10.0.0.0/28', '10.0.0.32 - 10.0.0.63'])
+    end
+
+    it 'rejects entries without spaces around the hyphen' do
+      expect {
+        described_class.new(name: 'bad_pools', subnet: '10.0.0.0/24', pools: ['10.0.0.1-10.0.0.10'])
+      }.to raise_error(Puppet::ResourceError, %r{Pool entries must be a CIDR or IPv4 range})
+    end
+
+    it 'rejects entries that are not CIDR or IPv4 ranges' do
+      expect {
+        described_class.new(name: 'bad_pools', subnet: '10.0.0.0/24', pools: ['not-a-pool'])
+      }.to raise_error(Puppet::ResourceError, %r{Pool entries must be a CIDR or IPv4 range})
+    end
+  end
 end

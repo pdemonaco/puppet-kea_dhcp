@@ -37,10 +37,18 @@ Puppet::Type.newtype(:kea_dhcp_v4_scope) do
 
   newproperty(:subnet) do
     desc 'CIDR representation of the subnet (mandatory).'
-
+    IPV4_SUBNET = %r{
+      ^
+      (25[0-5]|2[0-4]\d|1\d\d|[1-9]\d?)\.
+      (?:25[0-5]\.|2[0-4]\d\.|1\d\d\.|[1-9]?\d\.){2}
+      (25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)
+      /
+      (3[0-2]|[12]?\d)
+      $
+    }x.freeze  # <- 'x' flag allows whitespace and comments
     validate do |value|
       raise ArgumentError, 'Subnet must be provided' if value.nil? || value.empty?
-      raise ArgumentError, "Invalid ipv4 subnet '#{value}'" if !value.match?(%r{^(25[0-5]|2[0-4]\d|1\d\d|[1-9]\d?)\.(?:25[0-5].|2[0-4]\d.|1\d\d.|[1-9]?\d\.){2}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\/(3[0-2]|[12]?\d)$})
+      raise ArgumentError, "Invalid ipv4 subnet '#{value}'" unless value.match?(IPV4_SUBNET)
     end
   end
 
@@ -48,7 +56,16 @@ Puppet::Type.newtype(:kea_dhcp_v4_scope) do
     desc 'Array of pool definitions. Each entry is passed directly to Kea.'
     defaultto([])
 
-    # TODO: add validation of pool entries. Each entry should either be an IPv4 CIDR string or two IPv4 addresses separated by a hyphen surrounded by spaces.
+    OCTET      = '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)'
+    IPV4       = "(?:#{OCTET}\\.){3}#{OCTET}"
+    CIDR_REGEX = %r{\A#{IPV4}/(3[0-2]|[12]?\d)\z}.freeze
+    RANGE_REGEX = %r{\A#{IPV4} - #{IPV4}\z}.freeze
+
+    validate do |value|
+      unless value.is_a?(String) && (CIDR_REGEX.match?(value) || RANGE_REGEX.match?(value))
+        raise ArgumentError, 'Pool entries must be a CIDR or IPv4 range in the form "start - end"'
+      end
+    end
 
     def insync?(is)
       Array(is).sort == Array(should).sort
