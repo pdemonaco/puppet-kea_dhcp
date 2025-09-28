@@ -10,9 +10,7 @@ describe 'kea_dhcp' do
         resolved_facts = os_facts.dup
 
         os_fact = resolved_facts['os'] || resolved_facts[:os]
-        if os_fact.is_a?(Hash) && (os_fact['family'] || os_fact[:family])
-          resolved_facts
-        else
+        if !os_fact.is_a?(Hash) || !(os_fact['family'] || os_fact[:family])
           os_name = resolved_facts['operatingsystem'] || resolved_facts[:operatingsystem]
           os_family = resolved_facts['osfamily'] || resolved_facts[:osfamily]
           os_release_full = resolved_facts['operatingsystemrelease'] || resolved_facts[:operatingsystemrelease]
@@ -32,9 +30,8 @@ describe 'kea_dhcp' do
             resolved_facts['os'] = structured_os
             resolved_facts[:os] = structured_os
           end
-
-          resolved_facts
         end
+        resolved_facts
       end
 
       let(:params) do
@@ -57,15 +54,15 @@ describe 'kea_dhcp' do
         it 'configures the server instance' do
           is_expected.to contain_postgresql__server_instance('kea').with(
             'config_settings' => {
-              'pg_hba_conf_path'     => '/opt/pgsql/data/16/kea/pg_hba.conf',
+              'pg_hba_conf_path' => '/opt/pgsql/data/16/kea/pg_hba.conf',
               'postgresql_conf_path' => '/opt/pgsql/data/16/kea/postgresql.conf',
-              'pg_ident_conf_path'   => '/opt/pgsql/data/16/kea/pg_ident.conf',
-              'datadir'              => '/opt/pgsql/data/16/kea',
-              'service_name'         => 'postgresql-16-kea',
-              'port'                 => '5433',
+              'pg_ident_conf_path' => '/opt/pgsql/data/16/kea/pg_ident.conf',
+              'datadir' => '/opt/pgsql/data/16/kea',
+              'service_name' => 'postgresql-16-kea',
+              'port' => '5433',
             },
             'service_settings' => {
-              'service_name'   => 'postgresql@16-kea',
+              'service_name' => 'postgresql@16-kea',
               'service_status' => 'systemctl status postgresql@16-kea.service',
               'service_enable' => true,
               'service_ensure' => 'running',
@@ -90,7 +87,7 @@ describe 'kea_dhcp' do
         it 'initializes the schema' do
           is_expected.to contain_exec('init_kea_dhcp_schema').with(
             'command' => "/usr/sbin/kea-admin db-init pgsql -u kea -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P 5433 -n kea_dhcp",
-            'environment'  => [
+            'environment' => [
               'PGPASSWORD=kea_password',
             ],
             'user' => 'postgres',
