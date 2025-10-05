@@ -23,8 +23,12 @@
 #   Might also contain other configuration information, depending on the
 #   mood of the developer.
 #
+# @param array_dhcp4_server_options
+#   An array of additional options to include in the DHCPv4 server configuration.
+#   These options are treateds as the default options for all subnets managed by the server.
 class kea_dhcp (
   Sensitive[String] $sensitive_db_password,
+  Array[Hash] $array_dhcp4_server_options = [],
   Boolean $enable_dhcp4 = true,
   Boolean $enable_dhcp6 = false,
   Boolean $enable_ddns = true,

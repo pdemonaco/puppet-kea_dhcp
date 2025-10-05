@@ -25,6 +25,36 @@ describe provider_class do
     File.write(path, JSON.pretty_generate(payload))
   end
 
+  context 'config path resolution' do
+    it 'uses the server resource config path when none specified on the scope' do
+      catalog = Puppet::Resource::Catalog.new
+
+      server_resource = Puppet::Type.type(:kea_dhcp_v4_server).new(
+        name: 'dhcp4',
+        config_path: config_path,
+      )
+
+      scope_resource = type_class.new(
+        name: 'wired_network',
+        subnet: '172.24.132.0/24',
+      )
+
+      catalog.add_resource(server_resource, scope_resource)
+
+      server_provider_class = Puppet::Type.type(:kea_dhcp_v4_server).provider(:json)
+      server_provider = server_provider_class.new
+      server_provider.resource = server_resource
+      server_resource.provider = server_provider
+      server_provider.config_path
+
+      provider = provider_class.new
+      provider.resource = scope_resource
+      scope_resource.provider = provider
+
+      expect(provider.config_path).to eq(config_path)
+    end
+  end
+
   context 'when creating a new scope' do
     it 'assigns the next available id when none provided' do
       write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
@@ -41,6 +71,7 @@ describe provider_class do
 
       provider.create
       provider.flush
+      provider_class.commit_uncontrolled!
 
       config = JSON.parse(File.read(config_path))
       scope = config['Dhcp4']['subnet4'].first
@@ -65,6 +96,7 @@ describe provider_class do
 
       provider.create
       provider.flush
+      provider_class.commit_uncontrolled!
 
       config = JSON.parse(File.read(config_path))
       ids = config['Dhcp4']['subnet4'].map { |scope| scope['id'] }
@@ -112,6 +144,7 @@ describe provider_class do
       provider.subnet = '198.51.100.0/24'
       provider.pools = ['198.51.100.10 - 198.51.100.20']
       provider.flush
+      provider_class.commit_uncontrolled!
 
       config = JSON.parse(File.read(config_path))
       scope = config['Dhcp4']['subnet4'].first
@@ -157,6 +190,7 @@ describe provider_class do
 
       provider.destroy
       provider.flush
+      provider_class.commit_uncontrolled!
 
       config = JSON.parse(File.read(config_path))
       expect(config['Dhcp4']['subnet4']).to be_empty

@@ -50,6 +50,26 @@ describe 'kea_dhcp' do
       }
       it { is_expected.to contain_class('kea_dhcp::service') }
 
+      it 'manages the DHCPv4 server configuration' do
+        is_expected.to contain_kea_dhcp_v4_server('dhcp4').with(
+          'ensure' => 'present',
+          'config_path' => '/etc/kea/kea-dhcp4.conf',
+          'options' => [],
+        )
+
+        lease_database = catalogue.resource('Kea_dhcp_v4_server', 'dhcp4')[:lease_database]
+
+        expect(lease_database).to include(
+          'type' => 'postgresql',
+          'name' => 'kea_dhcp',
+          'user' => 'kea',
+          'host' => '127.0.0.1',
+          'port' => 5433,
+        )
+        expect(lease_database['password']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
+        expect(lease_database['password'].unwrap).to eq('kea_password')
+      end
+
       context 'with PostgreSQL setup' do
         it 'configures the server instance' do
           is_expected.to contain_postgresql__server_instance('kea').with(
@@ -78,10 +98,18 @@ describe 'kea_dhcp' do
         it 'creates the application database' do
           is_expected.to contain_postgresql__server__db('kea_dhcp').with(
             'user' => 'kea',
-            'password' => 'Sensitive("kea_password")',
             'instance' => 'kea',
             'require' => 'Postgresql::Server_instance[kea]',
           )
+
+          db_resource = catalogue.resource('Postgresql::Server::Db', 'kea_dhcp')
+          password = db_resource[:password]
+
+          if password.is_a?(Puppet::Pops::Types::PSensitiveType::Sensitive)
+            expect(password.unwrap).to eq('kea_password')
+          else
+            expect(password).to eq('kea_password')
+          end
         end
 
         it 'initializes the schema' do
