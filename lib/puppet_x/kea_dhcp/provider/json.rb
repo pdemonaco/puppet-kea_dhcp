@@ -154,7 +154,9 @@ class PuppetX::KeaDhcp::Provider::Json < Puppet::Provider
 
   def config_path
     path = resource[:config_path]
-    return path if path
+    if path && (resource_config_path_specified? || path != DEFAULT_CONFIG_PATH)
+      return path
+    end
 
     path = self.class.server_config_path
     if path
@@ -215,6 +217,15 @@ class PuppetX::KeaDhcp::Provider::Json < Puppet::Provider
                         :cleanup_temp_config, :cleanup_temp_configs, :commit_controllers
 
   private
+
+  def resource_config_path_specified?
+    return false unless resource.respond_to?(:original_parameters)
+
+    params = resource.original_parameters
+    return false unless params.respond_to?(:key?)
+
+    params.key?(:config_path) || params.key?('config_path')
+  end
 
   def server_resource_from_catalog
     return unless resource.respond_to?(:catalog)
