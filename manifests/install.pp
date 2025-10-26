@@ -17,4 +17,8 @@ class kea_dhcp::install (
       fail("Unsupported backend type ${backend}")
     }
   }
+
+  if $facts['os']['family'] == 'RedHat' {
+    include yum
+  }
 }

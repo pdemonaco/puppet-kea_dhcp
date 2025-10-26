@@ -24,3 +24,13 @@ fixtures:
     inifile: # dependency of systemd
       repo: 'puppetlabs/inifile'
       ref: '6.0.0'
+    yum:
+      repo: 'puppet/yum'
+      ref: '7.3.0'
+    augeas:
+      repo: 'puppetlabs-augeas_core'
+      ref: '1.5.0'
+  repositories:
+    facts: 'https://github.com/puppetlabs/puppetlabs-facts.git'
+    puppet_agent: 'https://github.com/puppetlabs/puppetlabs-puppet_agent.git'
+    provision: 'https://github.com/puppetlabs/provision.git'
