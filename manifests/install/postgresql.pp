@@ -8,40 +8,51 @@
 #   The root directory for the PostgreSQL instance directories.
 # @param sensitive_db_password
 #   The password for the PostgreSQL user, wrapped in a Sensitive type.
+# @param postgresql_version
+#   The version of PostgreSQL to install and configure.
+# @param manage_package_repo
+#   Whether to manage the PostgreSQL package repository.
 class kea_dhcp::install::postgresql (
   String $database_name = 'kea_dhcp',
   String $database_user = 'kea',
   Stdlib::Absolutepath $instance_directory_root = '/opt/pgsql',
   Sensitive[String] $sensitive_db_password = $kea_dhcp::sensitive_db_password,
+  Integer $postgresql_version = 16,
+  Boolean $manage_package_repo = true,
 ) {
+  class { 'postgresql::globals':
+    manage_package_repo => $manage_package_repo,
+    version             => $postgresql_version,
+  }
+
   include 'postgresql::server'
   $instance_name = $database_user
-  $instance_data_dir = "${instance_directory_root}/data/16/${instance_name}"
-  $instance_log_dir = "${instance_directory_root}/log/16/${instance_name}"
+  $instance_data_dir = "${instance_directory_root}/data/${postgresql_version}/${instance_name}"
+  $instance_log_dir = "${instance_directory_root}/log/${postgresql_version}/${instance_name}"
 
   postgresql::server_instance { $instance_name:
     instance_user               => 'postgres',
     instance_group              => 'postgres',
     instance_directories        => {
-      $instance_directory_root            => {
+      $instance_directory_root                               => {
         ensure => directory,
       },
-      "${instance_directory_root}/backup" => {
+      "${instance_directory_root}/backup"                    => {
         ensure => directory,
       },
-      "${instance_directory_root}/data"   => {
+      "${instance_directory_root}/data"                      => {
         ensure => directory,
       },
-      "${instance_directory_root}/wal"    => {
+      "${instance_directory_root}/wal"                       => {
         ensure => directory,
       },
-      "${instance_directory_root}/log"    => {
+      "${instance_directory_root}/log"                       => {
         ensure => directory,
       },
-      "${instance_directory_root}/log/16" => {
+      "${instance_directory_root}/log/${postgresql_version}" => {
         ensure => directory,
       },
-      $instance_log_dir                   => {
+      $instance_log_dir                                      => {
         ensure => directory,
       },
     },
@@ -51,12 +62,12 @@ class kea_dhcp::install::postgresql (
       postgresql_conf_path => "${instance_data_dir}/postgresql.conf",
       pg_ident_conf_path   => "${instance_data_dir}/pg_ident.conf",
       datadir              => $instance_data_dir,
-      service_name         => "postgresql-16-${instance_name}",
+      service_name         => "postgresql-${postgresql_version}-${instance_name}",
       port                 => 5433,
     },
     service_settings            => {
-      service_name   => "postgresql@16-${instance_name}",
-      service_status => "systemctl status postgresql@16-${instance_name}.service",
+      service_name   => "postgresql@${postgresql_version}-${instance_name}",
+      service_status => "systemctl status postgresql@${postgresql_version}-${instance_name}.service",
       service_enable => true,
       service_ensure => 'running',
     },

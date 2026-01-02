@@ -3,14 +3,3 @@ kea_dhcp::service::dhcp4_service_name: kea-dhcp4
 kea_dhcp::service::dhcp6_service_name: kea-dhcp6
 kea_dhcp::service::ddns_service_name: kea-dhcp-ddns
 kea_dhcp::service::ctrl_agent_service_name: kea-ctrl-agent
-yum::repos:
-  isc-kea-3-0:
-    descr: 'ISC - kea-3-0'
-    baseurl: 'https://dl.cloudsmith.io/public/isc/kea-3-0/rpm/el/$releasever/$basearch'
-    enabled: '1'
-    gpgcheck: '1'
-    repo_gpgcheck: '1'
-    gpgkey: 'https://dl.cloudsmith.io/public/isc/kea-3-0/gpg.9C7DE5B4B1F07C3F.key'
-    sslverify: '1'
-    sslcacert: '/etc/pki/tls/certs/ca-bundle.crt'
-    metadata_expire: '300'
