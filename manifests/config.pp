@@ -22,10 +22,10 @@
 #   Sensitive value containing the password for the lease database user.
 class kea_dhcp::config (
   Stdlib::Absolutepath $config_path = '/etc/kea/kea-dhcp4.conf',
-  String $lease_database_name = 'kea_dhcp',
-  String $lease_database_user = 'kea',
-  String $lease_database_host = '127.0.0.1',
-  Integer $lease_database_port = 5433,
+  String $lease_database_name = $kea_dhcp::lease_database_name,
+  String $lease_database_user = $kea_dhcp::lease_database_user,
+  String $lease_database_host = $kea_dhcp::lease_database_host,
+  Integer $lease_database_port = $kea_dhcp::lease_database_port,
   Array[Hash] $server_options = $kea_dhcp::array_dhcp4_server_options,
   Sensitive[String] $sensitive_db_password = $kea_dhcp::sensitive_db_password,
 ) {

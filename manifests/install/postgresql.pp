@@ -10,13 +10,15 @@
 #   The password for the PostgreSQL user, wrapped in a Sensitive type.
 # @param manage_package_repo
 #   Whether to manage the PostgreSQL package repository.
+# @param instance_port
+#   The port number for the PostgreSQL instance to listen on.
 class kea_dhcp::install::postgresql (
-  String $database_name = 'kea',
-  String $database_user = 'kea',
+  String $database_name = $kea_dhcp::lease_database_name,
+  String $database_user = $kea_dhcp::lease_database_user,
   Stdlib::Absolutepath $instance_directory_root = '/opt/pgsql',
   Sensitive[String] $sensitive_db_password = $kea_dhcp::sensitive_db_password,
   Boolean $manage_package_repo = true,
-  Stdlib::Port $instance_port = 5433,
+  Stdlib::Port $instance_port = $kea_dhcp::lease_database_port,
 ) {
   include 'postgresql::server'
   $instance_name = $database_user
@@ -80,9 +82,9 @@ class kea_dhcp::install::postgresql (
 
   $plain_db_password = $sensitive_db_password.unwrap
   $kea_unless = @("CMD"/L)
-    /usr/bin/psql -tAc "SELECT 1 FROM information_schema.tables WHERE \
-    table_schema = 'public' AND table_name = 'schema_version';" \
-    '${database_name}' | /usr/bin/grep -q 1
+    /usr/bin/psql -p ${instance_port} -d ${database_name} \
+    -tAc "SELECT 1 FROM schema_version;" | \
+    /usr/bin/grep -q 1
     |-CMD
 
   exec { 'init_kea_dhcp_schema':
