@@ -14,19 +14,19 @@ class kea_dhcp::install::yum_isc_repos (
     enabled         => 1,
     gpgcheck        => 1,
     repo_gpgcheck   => 1,
-    gpgkey          => "${base_url}/kea-${major_release}/rpm/gpg.${key_id}.key",
+    gpgkey          => "${base_url}/kea-${major_release}/gpg.${key_id}.key",
     sslverify       => 1,
     sslcacert       => '/etc/pki/tls/certs/ca-bundle.crt',
     metadata_expire => '300',
   }
-  yumrepo { "isc-kea-${major_release}":
+  yumrepo { "isc-kea-${major_release}-noarch":
     ensure          => present,
     descr           => "ISC - Kea-${major_release} - Noarch",
     baseurl         => "${base_url}/kea-${major_release}/rpm/el/\$releasever/noarch",
     enabled         => 1,
     gpgcheck        => 1,
     repo_gpgcheck   => 1,
-    gpgkey          => "${base_url}/kea-${major_release}/rpm/gpg.${key_id}.key",
+    gpgkey          => "${base_url}/kea-${major_release}/gpg.${key_id}.key",
     sslverify       => 1,
     sslcacert       => '/etc/pki/tls/certs/ca-bundle.crt',
     metadata_expire => '300',
