@@ -5,8 +5,6 @@ require 'puppet_x/kea_dhcp/provider/json'
 Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::Provider::Json) do
   desc 'Manages the server level Kea DHCPv4 configuration stored in kea-dhcp4.json.'
 
-  confine feature: :json
-
   def initialize(value = {})
     super(value)
     @property_flush = {}
