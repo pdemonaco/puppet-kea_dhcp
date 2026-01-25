@@ -15,15 +15,31 @@ jobs:
       fail-fast: false
       matrix:
         puppet_version: ['7', '8']
-    container:
-      image: sysbee/puppet-pdk:latest
+        include:
+          - puppet_version: '7'
+            puppet_gem: '~> 7.0'
+          - puppet_version: '8'
+            puppet_gem: '~> 8.0'
+    env:
+      PUPPET_GEM_VERSION: ${{ matrix.puppet_gem }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Configure Bundler to skip system_tests group
-        run: pdk bundle config set --local without system_tests
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Install dependencies
+        run: |
+          gem install bundler
+          bundle config set --local path vendor/bundle
+          bundle config set --local without system_tests
+          bundle install --jobs 4 --retry 3
+
       - name: Validate syntax and metadata
-        run: pdk validate --parallel --puppet-version=${{ matrix.puppet_version }}
+        run: bundle exec rake validate lint
 
   unit:
     name: Unit Tests (Puppet ${{ matrix.puppet_version }})
@@ -33,15 +49,31 @@ jobs:
       fail-fast: false
       matrix:
         puppet_version: ['7', '8']
-    container:
-      image: sysbee/puppet-pdk:latest
+        include:
+          - puppet_version: '7'
+            puppet_gem: '~> 7.0'
+          - puppet_version: '8'
+            puppet_gem: '~> 8.0'
+    env:
+      PUPPET_GEM_VERSION: ${{ matrix.puppet_gem }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Configure Bundler to skip system_tests group
-        run: pdk bundle config set --local without system_tests
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Install dependencies
+        run: |
+          gem install bundler
+          bundle config set --local path vendor/bundle
+          bundle config set --local without system_tests
+          bundle install --jobs 4 --retry 3
+
       - name: Run unit test suite
-        run: pdk test unit --parallel --puppet-version=${{ matrix.puppet_version }}
+        run: bundle exec rake spec
 
   acceptance:
     name: Acceptance Tests
