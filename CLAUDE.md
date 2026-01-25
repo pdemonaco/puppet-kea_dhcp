@@ -25,7 +25,7 @@ pdk exec rake lint
 pdk validate
 
 # Provision the acceptance test environment
-pdk bundle exec rake litmus:provision_list[docker, litmusimage/rockylinux:9]
+pdk bundle exec rake 'litmus:provision_list[default]'
 pdk bundle exec rake litmus:install_agent
 
 # Run acceptance tests (requires Litmus provisioning)
@@ -33,7 +33,7 @@ pdk bundle exec rake litmus:install_module
 pdk bundle exec rake litmus:acceptance:parallel
 
 # Teardown the docker container
-pdk bundle exec rake litmus:tear_down[litmusimage/rockylinux:9]
+pdk bundle exec rake litmus:tear_down
 ```
 
 ## Architecture
