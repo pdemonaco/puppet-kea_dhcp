@@ -17,11 +17,11 @@ jobs:
         puppet_version: ['7', '8']
     container:
       image: sysbee/puppet-pdk:latest
-    env:
-      BUNDLE_WITHOUT: system_tests
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Configure Bundler to skip system_tests group
+        run: pdk bundle config set --local without system_tests
       - name: Validate syntax and metadata
         run: pdk validate --parallel --puppet-version=${{ matrix.puppet_version }}
 
@@ -35,11 +35,11 @@ jobs:
         puppet_version: ['7', '8']
     container:
       image: sysbee/puppet-pdk:latest
-    env:
-      BUNDLE_WITHOUT: system_tests
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Configure Bundler to skip system_tests group
+        run: pdk bundle config set --local without system_tests
       - name: Run unit test suite
         run: pdk test unit --parallel --puppet-version=${{ matrix.puppet_version }}
 
