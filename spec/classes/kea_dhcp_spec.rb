@@ -61,10 +61,10 @@ describe 'kea_dhcp' do
 
         expect(lease_database).to include(
           'type' => 'postgresql',
-          'name' => 'kea_dhcp',
+          'name' => 'kea',
           'user' => 'kea',
           'host' => '127.0.0.1',
-          'port' => 5433,
+          'port' => 5432,
         )
         expect(lease_database['password']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
         expect(lease_database['password'].unwrap).to eq('kea_password')
@@ -74,21 +74,21 @@ describe 'kea_dhcp' do
         it 'configures the server instance' do
           is_expected.to contain_postgresql__server_instance('kea').with(
             'config_settings' => {
-              'pg_hba_conf_path' => '/opt/pgsql/data/16/kea/pg_hba.conf',
-              'postgresql_conf_path' => '/opt/pgsql/data/16/kea/postgresql.conf',
-              'pg_ident_conf_path' => '/opt/pgsql/data/16/kea/pg_ident.conf',
-              'datadir' => '/opt/pgsql/data/16/kea',
-              'service_name' => 'postgresql-16-kea',
-              'port' => '5433',
+              'pg_hba_conf_path' => '/opt/pgsql/data/kea/pg_hba.conf',
+              'postgresql_conf_path' => '/opt/pgsql/data/kea/postgresql.conf',
+              'pg_ident_conf_path' => '/opt/pgsql/data/kea/pg_ident.conf',
+              'datadir' => '/opt/pgsql/data/kea',
+              'service_name' => 'postgresql@kea',
+              'port' => 5432,
             },
             'service_settings' => {
-              'service_name' => 'postgresql@16-kea',
-              'service_status' => 'systemctl status postgresql@16-kea.service',
+              'service_name' => 'postgresql@kea',
+              'service_status' => 'systemctl status postgresql@kea.service',
               'service_enable' => true,
               'service_ensure' => 'running',
             },
             'initdb_settings' => {
-              'datadir' => '/opt/pgsql/data/16/kea',
+              'datadir' => '/opt/pgsql/data/kea',
               'group' => 'postgres',
               'user' => 'postgres',
             },
@@ -96,13 +96,13 @@ describe 'kea_dhcp' do
         end
 
         it 'creates the application database' do
-          is_expected.to contain_postgresql__server__db('kea_dhcp').with(
+          is_expected.to contain_postgresql__server__db('kea').with(
             'user' => 'kea',
             'instance' => 'kea',
             'require' => 'Postgresql::Server_instance[kea]',
           )
 
-          db_resource = catalogue.resource('Postgresql::Server::Db', 'kea_dhcp')
+          db_resource = catalogue.resource('Postgresql::Server::Db', 'kea')
           password = db_resource[:password]
 
           if password.is_a?(Puppet::Pops::Types::PSensitiveType::Sensitive)
@@ -114,12 +114,12 @@ describe 'kea_dhcp' do
 
         it 'initializes the schema' do
           is_expected.to contain_exec('init_kea_dhcp_schema').with(
-            'command' => "/usr/sbin/kea-admin db-init pgsql -u kea -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P 5433 -n kea_dhcp",
+            'command' => "/usr/sbin/kea-admin db-init pgsql -u kea -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P 5432 -n kea",
             'environment' => [
               'PGPASSWORD=kea_password',
             ],
             'user' => 'postgres',
-          ).that_requires('Postgresql::Server::Db[kea_dhcp]')
+          ).that_requires('Postgresql::Server::Db[kea]')
         end
       end
     end

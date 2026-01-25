@@ -3,7 +3,6 @@
 require 'spec_helper_acceptance'
 
 describe 'kea_dhcp class on Rocky 9' do
-
   before(:all) do
     install_repository
   end
@@ -33,18 +32,18 @@ describe 'kea_dhcp class on Rocky 9' do
 
       it 'installs kea 3.0.x' do
         version = run_shell("rpm -q --qf '%{VERSION}' isc-kea").stdout.strip
-        expect(version).to match(/\A3\.0\./)
+        expect(version).to match(%r{\A3\.0\.})
       end
     end
 
     it 'creates the PostgreSQL database for leases' do
       query = "SELECT 1 FROM pg_database WHERE datname = 'kea_dhcp';"
       result = run_shell("su - postgres -c \"psql -tAc \\\"#{query}\\\"\"")
-      expect(result.stdout).to match(/1/)
+      expect(result.stdout).to match(%r{1})
     end
 
     it 'starts the required services' do
-      %w[kea-dhcp4 postgresql@16-kea].each do |svc|
+      ['kea-dhcp4', 'postgresql@kea'].each do |svc|
         status = run_shell("systemctl is-active #{svc}", expect_failures: false)
         expect(status.stdout.strip).to eq('active')
       end

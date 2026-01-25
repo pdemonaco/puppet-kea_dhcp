@@ -58,7 +58,7 @@ describe 'kea_dhcp_v4_scope provider' do
       JSON
     end
 
-    before do
+    before(:each) do
       run_shell("cat <<'JSON' > #{config_path}\n#{preseed_config}\nJSON")
     end
 
@@ -97,7 +97,7 @@ describe 'kea_dhcp_v4_scope provider' do
   end
 
   context 'when multiple scopes are managed' do
-    before do
+    before(:each) do
       run_shell("rm -f #{config_path}")
     end
 
@@ -134,7 +134,7 @@ describe 'kea_dhcp_v4_scope provider' do
   end
 
   context 'when the generated configuration is invalid' do
-    before do
+    before(:each) do
       run_shell("rm -f #{config_path}")
     end
 
