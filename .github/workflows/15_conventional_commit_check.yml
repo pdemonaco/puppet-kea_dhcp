@@ -1,0 +1,21 @@
+name: 15 - Conventional Commit Lint
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+jobs:
+  commitlint:
+    name: 15 - Commitlint
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.ref != github.event.repository.default_branch
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Lint commits with commitlint
+        uses: wagoid/commitlint-github-action@v5

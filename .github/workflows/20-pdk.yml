@@ -17,6 +17,8 @@ jobs:
         puppet_version: ['7', '8']
     container:
       image: sysbee/puppet-pdk:latest
+    env:
+      BUNDLE_WITHOUT: system_tests
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,6 +35,8 @@ jobs:
         puppet_version: ['7', '8']
     container:
       image: sysbee/puppet-pdk:latest
+    env:
+      BUNDLE_WITHOUT: system_tests
     steps:
       - name: Checkout
         uses: actions/checkout@v4
