@@ -1,10 +1,16 @@
-# CLAUDE.md
+# RULES
+- CONSTRAINTS: Keep changes minimal; don’t refactor unrelated code; no new deps.
+- OUTPUT: (1) files changed list (2) patch (3) short rationale.
+- DON’T: explain basics, restate prompt, or list possibilities.
+- Before editing code: give a plan in <=5 bullets, each <=12 words. Then implement. No extra commentary.
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# Workflow
+- Always perform lint checks when you are done making a series of changes
+- Prefer single tests, not the entire suite, for performance
+- Do not evaluate acceptance tests unless asked
 
-## Overview
-
-This is a Puppet module (`pdemon-kea_dhcp`) for installing and configuring ISC Kea DHCP server on RHEL/Rocky 8-9 systems. It uses PostgreSQL as the lease database backend.
+# Code style
+- Use conventional commit syntax for commit messages
 
 ## Build & Test Commands
 
@@ -17,9 +23,6 @@ pdk test unit
 
 # Run a single unit test file
 pdk test unit --tests=spec/classes/kea_dhcp_spec.rb
-
-# Run all linting
-pdk exec rake lint
 
 # Validate Puppet syntax
 pdk validate
