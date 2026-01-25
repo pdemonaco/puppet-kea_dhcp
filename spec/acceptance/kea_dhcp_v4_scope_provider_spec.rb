@@ -94,7 +94,12 @@ describe 'kea_dhcp_v4_scope provider' do
 
   context 'when multiple scopes are managed' do
     before(:each) do
+      run_shell("cp #{config_path} #{config_path}.bak 2>/dev/null || true")
       run_shell("rm -f #{config_path}")
+    end
+
+    after(:each) do
+      run_shell("mv #{config_path}.bak #{config_path} 2>/dev/null || true")
     end
 
     it 'aggregates all scopes into the same configuration file' do
@@ -130,11 +135,30 @@ describe 'kea_dhcp_v4_scope provider' do
   end
 
   context 'when the generated configuration is invalid' do
-    before(:each) do
-      run_shell("rm -f #{config_path}")
+    let(:valid_config) do
+      <<~JSON
+        {
+          "Dhcp4": {
+            "valid-lifetime": 3600,
+            "subnet4": [
+              {
+                "id": 1,
+                "subnet": "10.0.0.0/24",
+                "pools": [{"pool": "10.0.0.10 - 10.0.0.100"}]
+              }
+            ]
+          }
+        }
+      JSON
     end
 
-    it 'fails validation and reports the error' do
+    before(:each) do
+      run_shell("cat <<'JSON' > #{config_path}\n#{valid_config}\nJSON")
+    end
+
+    it 'preserves the original config when validation fails' do
+      checksum_before = run_shell("md5sum #{config_path}").stdout.split.first
+
       manifest = <<~PP
         kea_dhcp_v4_scope { 'invalid-scope':
           subnet      => '192.0.2.0/24',
@@ -143,14 +167,12 @@ describe 'kea_dhcp_v4_scope provider' do
         }
       PP
 
-      # The validation error occurs in post_resource_eval, which results in exit code 2
-      # (changes made) rather than 4/6 (failures). The error IS reported though.
       result = apply_manifest(manifest, catch_failures: false)
       expect(result.stderr).to match(%r{post_resource_eval failed.*Kea_dhcp_v4_scope}m)
 
-      # Verify that the invalid configuration was NOT written to the target path
-      file_check = run_shell("test -f #{config_path} && echo exists || echo missing")
-      expect(file_check.stdout.strip).to eq('missing')
+      # Verify the original config file is unchanged
+      checksum_after = run_shell("md5sum #{config_path}").stdout.split.first
+      expect(checksum_after).to eq(checksum_before)
     end
   end
 end
