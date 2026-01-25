@@ -38,6 +38,7 @@
 #
 # @param lease_database_port
 #   Port number of the PostgreSQL server if that backend is selected.
+#
 class kea_dhcp (
   Sensitive[String] $sensitive_db_password,
   Array[Hash] $array_dhcp4_server_options = [],
@@ -45,10 +46,10 @@ class kea_dhcp (
   Boolean $enable_dhcp6 = false,
   Boolean $enable_ddns = true,
   Boolean $enable_ctrl_agent = true,
-  Optional[String] $lease_database_name = 'kea',
-  Optional[String] $lease_database_user = 'kea',
-  Optional[String] $lease_database_host = '127.0.0.1',
-  Optional[Stdlib::Port] $lease_database_port = 5432,
+  String $lease_database_name = 'kea',
+  String $lease_database_user = 'kea',
+  String $lease_database_host = '127.0.0.1',
+  Stdlib::Port $lease_database_port = 5432,
   Kea_Dhcp::Backends $backend = 'postgresql',
 ) {
   include kea_dhcp::install
