@@ -49,7 +49,7 @@ class kea_dhcp (
   String $lease_database_name = 'kea',
   String $lease_database_user = 'kea',
   String $lease_database_host = '127.0.0.1',
-  Stdlib::Port $lease_database_port = 5432,
+  Stdlib::Port $lease_database_port = 5433,
   Kea_Dhcp::Backends $backend = 'postgresql',
 ) {
   include kea_dhcp::install

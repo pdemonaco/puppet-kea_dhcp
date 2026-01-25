@@ -110,7 +110,7 @@ class PuppetX::KeaDhcp::Provider::Json < Puppet::Provider
     stage_config(path) unless staged_paths.include?(path)
     temp = temp_configs[path]
 
-    Puppet::Util::Execution.execute(['kea-dhcp4', '-t', '-c', temp.temp_path], failonfail: true)
+    Puppet::Util::Execution.execute(['kea-dhcp4', '-t', temp.temp_path], failonfail: true)
 
     FileUtils.mkdir_p(File.dirname(path))
     FileUtils.mv(temp.temp_path, path, force: true)

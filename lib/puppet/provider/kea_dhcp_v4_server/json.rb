@@ -25,7 +25,7 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       server = dhcp4_config(config)
       next unless present?(server)
 
-      grouped.each_value do |resource|
+      grouped.each do |_name, resource|
         resource.provider = new(resource_hash(server, path))
       end
     end

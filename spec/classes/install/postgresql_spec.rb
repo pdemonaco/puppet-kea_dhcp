@@ -39,7 +39,7 @@ describe 'kea_dhcp::install::postgresql' do
   let(:database_name) { 'kea' }
   let(:database_user) { 'kea' }
   let(:instance_directory_root) { '/opt/pgsql' }
-  let(:instance_port) { 5432 }
+  let(:instance_port) { 5433 }
   let(:plain_password) { 'supersecret' }
   let(:params) do
     {

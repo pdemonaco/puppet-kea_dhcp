@@ -23,8 +23,8 @@ describe 'kea_dhcp class on Rocky 9' do
     end
 
     it 'applies the manifest idempotently' do
-      expect(apply_manifest(manifest, catch_failures: true, debug: true).exit_code).to be_zero
-      apply_mainifest(manifest, catch_changes: true)
+      apply_manifest(manifest, catch_failures: true)
+      apply_manifest(manifest, catch_changes: true)
     end
 
     describe package('isc-kea') do
@@ -37,8 +37,8 @@ describe 'kea_dhcp class on Rocky 9' do
     end
 
     it 'creates the PostgreSQL database for leases' do
-      query = "SELECT 1 FROM pg_database WHERE datname = 'kea_dhcp';"
-      result = run_shell("su - postgres -c \"psql -tAc \\\"#{query}\\\"\"")
+      query = "SELECT 1 FROM pg_database WHERE datname = 'kea';"
+      result = run_shell("su - postgres -c \"psql -p 5433 -tAc \\\"#{query}\\\"\"")
       expect(result.stdout).to match(%r{1})
     end
 
@@ -54,7 +54,7 @@ describe 'kea_dhcp class on Rocky 9' do
       dhcp4 = config.fetch('Dhcp4')
       lease_db = dhcp4.fetch('lease-database')
 
-      expect(lease_db['name']).to eq('kea_dhcp')
+      expect(lease_db['name']).to eq('kea')
       expect(lease_db['user']).to eq('kea')
       expect(lease_db['port']).to eq(5433)
 

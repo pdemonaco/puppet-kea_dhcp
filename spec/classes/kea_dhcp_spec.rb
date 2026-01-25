@@ -64,7 +64,7 @@ describe 'kea_dhcp' do
           'name' => 'kea',
           'user' => 'kea',
           'host' => '127.0.0.1',
-          'port' => 5432,
+          'port' => 5433,
         )
         expect(lease_database['password']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
         expect(lease_database['password'].unwrap).to eq('kea_password')
@@ -79,7 +79,7 @@ describe 'kea_dhcp' do
               'pg_ident_conf_path' => '/opt/pgsql/data/kea/pg_ident.conf',
               'datadir' => '/opt/pgsql/data/kea',
               'service_name' => 'postgresql@kea',
-              'port' => 5432,
+              'port' => 5433,
             },
             'service_settings' => {
               'service_name' => 'postgresql@kea',
@@ -114,7 +114,7 @@ describe 'kea_dhcp' do
 
         it 'initializes the schema' do
           is_expected.to contain_exec('init_kea_dhcp_schema').with(
-            'command' => "/usr/sbin/kea-admin db-init pgsql -u kea -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P 5432 -n kea",
+            'command' => "/usr/sbin/kea-admin db-init pgsql -u kea -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P 5433 -n kea",
             'environment' => [
               'PGPASSWORD=kea_password',
             ],
