@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for spending time improving this module! The checks in `.github/workflows/pdk.yml` run automatically in GitHub Actions, and you can reproduce them locally before pushing a change.
+Thanks for spending time improving this module! The checks in `.github/workflows/20-pdk.yml` run automatically in GitHub Actions, and you can reproduce them locally before pushing a change.
 
 ## Prerequisites
 
