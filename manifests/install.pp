@@ -12,6 +12,9 @@ class kea_dhcp::install (
   case $backend {
     'postgresql': {
       include 'kea_dhcp::install::postgresql'
+      package { 'isc-kea-pgsql':
+        ensure => installed,
+      }
     }
     default: {
       fail("Unsupported backend type ${backend}")
@@ -21,5 +24,6 @@ class kea_dhcp::install (
   if $facts['os']['family'] == 'RedHat' {
     include 'kea_dhcp::install::yum_isc_repos'
     Class['kea_dhcp::install::yum_isc_repos'] -> Package['isc-kea']
+    Class['kea_dhcp::install::yum_isc_repos'] -> Package['isc-kea-pgsql']
   }
 }
