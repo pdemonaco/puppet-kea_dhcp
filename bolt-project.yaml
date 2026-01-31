@@ -2,10 +2,3 @@
 name: kea_dhcp
 modulepath:
   - spec/fixtures/modules
-
-inventory-config:
-  ssh:
-    user: root
-    password: root
-    host-key-check: false
-    run-as: root
