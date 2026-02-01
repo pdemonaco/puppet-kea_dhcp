@@ -96,6 +96,15 @@ Gemfile:
       - gem: 'github_changelog_generator'
         version: '~> 1.15'
         condition: "Gem::Version.new(RUBY_VERSION.dup) >= Gem::Version.new('2.3.0')"
+    ':system_tests':
+      - gem: 'ed25519'
+        version:
+          - '>= 1.2'
+          - '< 2'
+      - gem: 'bcrypt_pbkdf'
+        version:
+          - '>= 1.0'
+          - '< 1.3'
 spec/spec_helper.rb:
   coverage_report: true
   mock_with: ':rspec'
