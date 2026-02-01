@@ -35,6 +35,7 @@ group :development do
   gem "rubocop-rspec", '= 2.19.0',               require: false
   gem "rb-readline", '= 0.5.5',                  require: false, platforms: [:mswin, :mingw, :x64_mingw]
   gem "rexml", '>= 3.0.0', '< 3.2.7',            require: false
+  gem "github_changelog_generator", '~> 1.15',   require: false if Gem::Version.new(RUBY_VERSION.dup) >= Gem::Version.new('2.3.0')
 end
 group :development, :release_prep do
   gem "puppet-strings", '~> 4.0',         require: false
@@ -42,11 +43,11 @@ group :development, :release_prep do
   gem "puppet-blacksmith", '~> 7.0',      require: false
 end
 group :system_tests do
-  gem "puppet_litmus", '~> 1.0',    require: false, platforms: [:ruby, :x64_mingw]
-  gem "ed25519", '>= 1.2', '< 1.3', require: false
-  gem "bcrypt_pbkdf", '>= 1.0', '< 2', require: false
-  gem "CFPropertyList", '< 3.0.7',  require: false, platforms: [:mswin, :mingw, :x64_mingw]
-  gem "serverspec", '~> 2.41',      require: false
+  gem "puppet_litmus", '~> 1.0',         require: false, platforms: [:ruby, :x64_mingw]
+  gem "CFPropertyList", '< 3.0.7',       require: false, platforms: [:mswin, :mingw, :x64_mingw]
+  gem "serverspec", '~> 2.41',           require: false
+  gem "ed25519", '>= 1.2', '< 2',        require: false
+  gem "bcrypt_pbkdf", '>= 1.0', '< 1.3', require: false
 end
 
 puppet_version = ENV['PUPPET_GEM_VERSION']

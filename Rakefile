@@ -50,7 +50,7 @@ end
 
 def changelog_future_release
   return unless Rake.application.top_level_tasks.include?('changelog')
-  value = format('v%s', JSON.parse(File.read('metadata.json'))['version'])
+  value = format('%s', JSON.parse(File.read('metadata.json'))['version'])
   raise 'unable to find the future_release (version) in metadata.json' if value.nil?
   puts "GitHubChangelogGenerator future_release:#{value}"
   value
