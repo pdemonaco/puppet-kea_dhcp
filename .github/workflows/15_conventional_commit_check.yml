@@ -1,17 +1,16 @@
-name: 50 - Conventional Commit Lint
+name: 15 - Conventional Commit Lint
 
 on:
-  workflow_run:
-    workflows: ["20 - PDK"]
+  pull_request:
     types:
-      - completed
+      - opened
+      - reopened
+      - synchronize
 
 jobs:
   commitlint:
-    name: Commitlint
+    name: Commit Lint
     runs-on: ubuntu-latest
-    if: >
-      github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
