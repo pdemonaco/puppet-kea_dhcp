@@ -21,33 +21,29 @@ describe 'kea_dhcp_v4_scope provider' do
       <<~JSON
         {
           "Dhcp4": {
-            "author": "hand crafted",
             "valid-lifetime": 7200,
             "control-socket": {
               "socket-type": "unix",
-              "socket-name": "/run/kea/kea4-ctrl-socket"
+              "socket-name": "/var/run/kea/kea4-ctrl-socket"
             },
             "subnet4": [
               {
                 "id": 1,
                 "subnet": "192.0.2.0/24",
                 "comment": "existing scope",
-                "user-context": { "puppet_name": "legacy-scope" },
+                "user-context": { "puppet_name": "legacy-scope", "custom_data": "should remain" },
                 "pools": [
                   { "pool": "192.0.2.10 - 192.0.2.200" }
                 ],
                 "option-data": [
                   { "name": "routers", "data": "192.0.2.1" }
-                ],
-                "extra-field": "should remain"
+                ]
               }
-            ]
-          },
-          "Logging": {
+            ],
             "loggers": [
               {
                 "name": "kea-dhcp4",
-                "output_options": [
+                "output-options": [
                   { "output": "stdout" }
                 ],
                 "severity": "INFO"
@@ -58,7 +54,7 @@ describe 'kea_dhcp_v4_scope provider' do
       JSON
     end
 
-    before do
+    before(:each) do
       run_shell("cat <<'JSON' > #{config_path}\n#{preseed_config}\nJSON")
     end
 
@@ -83,22 +79,27 @@ describe 'kea_dhcp_v4_scope provider' do
 
       expect(dhcp4['valid-lifetime']).to eq(7200)
       expect(dhcp4['control-socket']).not_to be_nil
-      expect(config.dig('Logging', 'loggers', 0, 'name')).to eq('kea-dhcp4')
+      expect(dhcp4.dig('loggers', 0, 'name')).to eq('kea-dhcp4')
 
       subnets = Array(dhcp4['subnet4'])
       legacy = subnets.find { |scope| scope.dig('user-context', 'puppet_name') == 'legacy-scope' }
       added = subnets.find { |scope| scope.dig('user-context', 'puppet_name') == 'new-scope' }
 
       expect(legacy).not_to be_nil
-      expect(legacy['extra-field']).to eq('should remain')
+      expect(legacy.dig('user-context', 'custom_data')).to eq('should remain')
       expect(added).not_to be_nil
       expect(added['subnet']).to eq('198.51.100.0/24')
     end
   end
 
   context 'when multiple scopes are managed' do
-    before do
+    before(:each) do
+      run_shell("cp #{config_path} #{config_path}.bak 2>/dev/null || true")
       run_shell("rm -f #{config_path}")
+    end
+
+    after(:each) do
+      run_shell("mv #{config_path}.bak #{config_path} 2>/dev/null || true")
     end
 
     it 'aggregates all scopes into the same configuration file' do
@@ -134,11 +135,30 @@ describe 'kea_dhcp_v4_scope provider' do
   end
 
   context 'when the generated configuration is invalid' do
-    before do
-      run_shell("rm -f #{config_path}")
+    let(:valid_config) do
+      <<~JSON
+        {
+          "Dhcp4": {
+            "valid-lifetime": 3600,
+            "subnet4": [
+              {
+                "id": 1,
+                "subnet": "10.0.0.0/24",
+                "pools": [{"pool": "10.0.0.10 - 10.0.0.100"}]
+              }
+            ]
+          }
+        }
+      JSON
     end
 
-    it 'fails validation and reports the error' do
+    before(:each) do
+      run_shell("cat <<'JSON' > #{config_path}\n#{valid_config}\nJSON")
+    end
+
+    it 'preserves the original config when validation fails' do
+      checksum_before = run_shell("md5sum #{config_path}").stdout.split.first
+
       manifest = <<~PP
         kea_dhcp_v4_scope { 'invalid-scope':
           subnet      => '192.0.2.0/24',
@@ -147,8 +167,12 @@ describe 'kea_dhcp_v4_scope provider' do
         }
       PP
 
-      result = apply_manifest(manifest, expect_failures: true)
-      expect(result.stderr).to match(%r{Execution of '.*kea-dhcp4.*-t.*' returned})
+      result = apply_manifest(manifest, catch_failures: false)
+      expect(result.stderr).to match(%r{post_resource_eval failed.*Kea_dhcp_v4_scope}m)
+
+      # Verify the original config file is unchanged
+      checksum_after = run_shell("md5sum #{config_path}").stdout.split.first
+      expect(checksum_after).to eq(checksum_before)
     end
   end
 end

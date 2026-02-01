@@ -1,0 +1,4 @@
+---
+name: kea_dhcp
+modulepath:
+  - spec/fixtures/modules

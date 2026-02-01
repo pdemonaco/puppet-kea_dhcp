@@ -1,0 +1,80 @@
+name: 75 - Release - Generate Tag & Changelog
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+jobs:
+  release:
+    name: 75 - Release - Generate Tag & Changelog
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TARGET_BRANCH: ${{ github.ref_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine release version
+        run: |
+          version="$(jq -r '.version' metadata.json)"
+          if [ -z "${version}" ] || [ "${version}" = "null" ]; then
+            echo "Unable to determine version from metadata.json" >&2
+            exit 1
+          fi
+          echo "RELEASE_VERSION=${version}" >> "${GITHUB_ENV}"
+          echo "RELEASE_TAG=${version}" >> "${GITHUB_ENV}"
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Install release dependencies
+        run: |
+          bundle config set --local without 'system_tests'
+          bundle config set --local with 'development release_prep'
+          bundle install --jobs 4 --retry 3
+
+      - name: Generate REFERENCE.md
+        run: |
+          bundle exec rake strings:generate:reference
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain REFERENCE.md)" ]; then
+            git add REFERENCE.md
+            git commit -m "docs(reference): update REFERENCE.md"
+          fi
+
+      - name: Generate changelog
+        env:
+          CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bundle exec rake changelog
+
+      - name: Commit changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain CHANGELOG.md)" ]; then
+            git add CHANGELOG.md
+            git commit -m "chore(changelog): update ${RELEASE_VERSION} changelog"
+          fi
+
+      - name: Create release tag
+        run: |
+          if git rev-parse "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Tag ${RELEASE_TAG} already exists" >&2
+            exit 1
+          fi
+          git tag -a "${RELEASE_TAG}" -m "Release ${RELEASE_VERSION}"
+
+      - name: Push changes and tag
+        run: |
+          git push origin "HEAD:${TARGET_BRANCH}"
+          git push origin "${RELEASE_TAG}"

@@ -1,44 +1,83 @@
 # Contributing
 
-Thanks for spending time improving this module! The checks in `.github/workflows/pdk.yml` run automatically in GitHub Actions, and you can reproduce them locally before pushing a change.
+Thanks for spending time improving this module! The checks in `.github/workflows/20-pdk.yml` run automatically in GitHub Actions, and you can reproduce them locally before pushing a change.
+
+## Prerequisites
+
+- [Puppet Development Kit (PDK)](https://www.puppet.com/docs/pdk/latest/pdk.html)
+- Docker (for acceptance tests)
 
 ## Test Workflow
 
+### Install dependencies
+
+```bash
+pdk bundle install
+```
+
 ### Syntax validation
 
-- `pdk validate`
+Validates Puppet syntax, metadata, and runs linting:
+
+```bash
+pdk validate
+```
 
 ### Unit tests
 
-- `pdk test unit`
+Run all unit tests (rspec-puppet):
+
+```bash
+pdk test unit
+```
+
+Run a single unit test file:
+
+```bash
+pdk test unit --tests=spec/classes/kea_dhcp_spec.rb
+```
 
 ### Acceptance tests
 
-The acceptance suite uses [puppet-litmus](https://github.com/puppetlabs/puppet_litmus) with Docker-backed test nodes. You will need a working Docker installation as well as Ruby and Bundler.
+The acceptance suite uses [puppet-litmus](https://github.com/puppetlabs/puppet_litmus) with Docker-backed test nodes. You will need a working Docker installation.
 
-1. Install the Ruby dependencies (include the `system_tests` group):
-
-   ```bash
-   bundle config set path vendor/bundle
-   BUNDLE_WITH=system_tests bundle install
-   ```
-
-2. Prepare module fixtures for the suite:
+1. Provision the test environment (Rocky Linux 9 container):
 
    ```bash
-   bundle exec rake spec_prep
+   pdk bundle exec rake 'litmus:provision_list[default]'
    ```
 
-3. Run the acceptance tests. The task provisions the Docker containers declared in `provision.yaml` (Rocky Linux 9), installs the module, and executes every spec in `spec/acceptance`:
+2. Install the Puppet agent on the test node:
 
    ```bash
-   LITMUS_BACKEND=docker bundle exec rake 'litmus:acceptance:parallel'
+   pdk bundle exec rake litmus:install_agent
    ```
 
-4. When you are done, tear the environment down to reclaim resources:
+3. Install the module and its dependencies:
 
    ```bash
-   LITMUS_BACKEND=docker bundle exec rake 'litmus:tear_down'
+   pdk bundle exec rake litmus:install_module
    ```
+
+4. Run all acceptance tests:
+
+   ```bash
+   pdk bundle exec rake litmus:acceptance:parallel
+   ```
+
+5. When you are done, tear down the environment to reclaim resources:
+
+   ```bash
+   pdk bundle exec rake litmus:tear_down
+   ```
+
+### Quick acceptance test cycle
+
+After the initial provisioning, you can iterate on acceptance tests by reinstalling the module and re-running tests:
+
+```bash
+pdk bundle exec rake litmus:install_module
+pdk bundle exec rake litmus:acceptance:parallel
+```
 
 The GitHub Action automatically skips the acceptance stage if the `spec/acceptance` directory has no test files. Once acceptance coverage is added, the workflow will execute the same commands listed above.

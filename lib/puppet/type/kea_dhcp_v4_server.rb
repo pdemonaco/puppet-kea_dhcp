@@ -62,6 +62,39 @@ Puppet::Type.newtype(:kea_dhcp_v4_server) do
     private :unwrap_sensitive
   end
 
+  newproperty(:hooks_libraries, array_matching: :all) do
+    desc 'Array of hooks library configurations. Each element is a hash with at least a library key.'
+    defaultto([])
+
+    validate do |value|
+      unless value.is_a?(Hash) && (value.key?('library') || value.key?(:library))
+        raise ArgumentError, 'Each hooks library must be a hash containing at least a library key'
+      end
+    end
+
+    def insync?(is)
+      normalize(Array(is)) == normalize(Array(should))
+    end
+
+    def munge(value)
+      stringify_keys(value)
+    end
+
+    def normalize(collection)
+      collection.map { |item| stringify_keys(item) }.map { |item| item.sort.to_h }.sort_by { |item| item.to_a }
+    end
+    private :normalize
+
+    def stringify_keys(hash)
+      return {} unless hash.respond_to?(:each)
+
+      hash.each_with_object({}) do |(key, val), acc|
+        acc[key.to_s] = val.is_a?(Hash) ? stringify_keys(val) : val
+      end
+    end
+    private :stringify_keys
+  end
+
   newproperty(:lease_database) do
     desc 'Lease database configuration. Currently only the PostgreSQL backend is supported.'
 

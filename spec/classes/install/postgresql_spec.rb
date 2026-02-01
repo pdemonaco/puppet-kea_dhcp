@@ -36,23 +36,24 @@ describe 'kea_dhcp::install::postgresql' do
     resolved_facts
   end
   let(:pre_condition) { 'include postgresql::server' }
-  let(:database_name) { 'kea_dhcp' }
+  let(:database_name) { 'kea' }
   let(:database_user) { 'kea' }
   let(:instance_directory_root) { '/opt/pgsql' }
+  let(:instance_port) { 5433 }
   let(:plain_password) { 'supersecret' }
   let(:params) do
     {
       database_name: database_name,
       database_user: database_user,
       instance_directory_root: instance_directory_root,
+      instance_port: instance_port,
       sensitive_db_password: RSpec::Puppet::RawString.new('Sensitive("supersecret")'),
     }
   end
 
-  let(:instance_data_dir) { "#{instance_directory_root}/data/16/#{database_user}" }
-  let(:instance_log_dir) { "#{instance_directory_root}/log/16/#{database_user}" }
-  let(:postgresql_service_name) { "postgresql-16-#{database_user}" }
-  let(:systemd_service_name) { "postgresql@16-#{database_user}" }
+  let(:instance_data_dir) { "#{instance_directory_root}/data/#{database_user}" }
+  let(:instance_log_dir) { "#{instance_directory_root}/log/#{database_user}" }
+  let(:service_name) { "postgresql@#{database_user}" }
 
   it { is_expected.to compile.with_all_deps }
   it { is_expected.to contain_class('postgresql::server') }
@@ -67,7 +68,6 @@ describe 'kea_dhcp::install::postgresql' do
         "#{instance_directory_root}/data" => { 'ensure' => 'directory' },
         "#{instance_directory_root}/wal" => { 'ensure' => 'directory' },
         "#{instance_directory_root}/log" => { 'ensure' => 'directory' },
-        "#{instance_directory_root}/log/16" => { 'ensure' => 'directory' },
         instance_log_dir => { 'ensure' => 'directory' },
       },
       'instance_user_homedirectory' => "#{instance_directory_root}/data/home",
@@ -76,12 +76,12 @@ describe 'kea_dhcp::install::postgresql' do
         'postgresql_conf_path' => "#{instance_data_dir}/postgresql.conf",
         'pg_ident_conf_path' => "#{instance_data_dir}/pg_ident.conf",
         'datadir' => instance_data_dir,
-        'service_name' => postgresql_service_name,
-        'port' => 5433,
+        'service_name' => service_name,
+        'port' => instance_port,
       },
       'service_settings' => {
-        'service_name' => systemd_service_name,
-        'service_status' => "systemctl status #{systemd_service_name}.service",
+        'service_name' => service_name,
+        'service_status' => "systemctl status #{service_name}.service",
         'service_enable' => true,
         'service_ensure' => 'running',
       },
@@ -103,9 +103,11 @@ describe 'kea_dhcp::install::postgresql' do
   end
 
   it do
+    unless_cmd = "/usr/bin/psql -p #{instance_port} -d #{database_name} " \
+                 '-tAc "SELECT 1 FROM schema_version;" | /usr/bin/grep -q 1'
     is_expected.to contain_exec('init_kea_dhcp_schema').with(
-      'command' => "/usr/sbin/kea-admin db-init pgsql -u #{database_user} -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P 5433 -n #{database_name}",
-      'unless' => "/usr/bin/psql -tAc \"SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'schema_version';\" '#{database_name}' | /usr/bin/grep -q 1",
+      'command' => "/usr/sbin/kea-admin db-init pgsql -u #{database_user} -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P #{instance_port} -n #{database_name}",
+      'unless' => unless_cmd,
       'path' => ['/usr/bin', '/usr/sbin', '/bin', '/sbin'],
       'user' => 'postgres',
     ).that_requires("Postgresql::Server::Db[#{database_name}]")

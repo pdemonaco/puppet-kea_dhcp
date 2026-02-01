@@ -2,4 +2,5 @@
 default:
   provisioner: docker
   images:
+    - litmusimage/rockylinux:8
     - litmusimage/rockylinux:9

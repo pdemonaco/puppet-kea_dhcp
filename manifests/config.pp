@@ -20,20 +20,30 @@
 #
 # @param sensitive_db_password
 #   Sensitive value containing the password for the lease database user.
+#
+# @param backend
+#   The backend type used for storing leases. Used to determine which hooks libraries to load.
 class kea_dhcp::config (
   Stdlib::Absolutepath $config_path = '/etc/kea/kea-dhcp4.conf',
-  String $lease_database_name = 'kea_dhcp',
-  String $lease_database_user = 'kea',
-  String $lease_database_host = '127.0.0.1',
-  Integer $lease_database_port = 5433,
+  String $lease_database_name = $kea_dhcp::lease_database_name,
+  String $lease_database_user = $kea_dhcp::lease_database_user,
+  String $lease_database_host = $kea_dhcp::lease_database_host,
+  Integer $lease_database_port = $kea_dhcp::lease_database_port,
   Array[Hash] $server_options = $kea_dhcp::array_dhcp4_server_options,
   Sensitive[String] $sensitive_db_password = $kea_dhcp::sensitive_db_password,
+  Kea_Dhcp::Backends $backend = $kea_dhcp::backend,
 ) {
+  $hooks_libraries = $backend ? {
+    'postgresql' => [{ 'library' => '/usr/lib64/kea/hooks/libdhcp_pgsql.so' }],
+    default      => [],
+  }
+
   kea_dhcp_v4_server { 'dhcp4':
-    ensure         => present,
-    config_path    => $config_path,
-    options        => $server_options,
-    lease_database => {
+    ensure          => present,
+    config_path     => $config_path,
+    options         => $server_options,
+    hooks_libraries => $hooks_libraries,
+    lease_database  => {
       'type'     => 'postgresql',
       'name'     => $lease_database_name,
       'user'     => $lease_database_user,
