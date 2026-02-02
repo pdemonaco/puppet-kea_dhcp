@@ -245,7 +245,9 @@ class PuppetX::KeaDhcp::Provider::Json < Puppet::Provider
     end
 
     resource.catalog.resources.find do |res|
-      res.type.casecmp('Kea_dhcp_v4_server').zero? && res.title == SERVER_INSTANCE_NAME
+      next unless res.type && res.title == SERVER_INSTANCE_NAME
+
+      res.type.casecmp('Kea_dhcp_v4_server')&.zero?
     end
   rescue Puppet::Error
     nil
