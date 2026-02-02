@@ -25,7 +25,16 @@ describe 'kea_dhcp_v4_reservation provider' do
 
   context 'when creating a reservation with hw-address' do
     it 'adds the reservation to the subnet by auto-detecting from IP' do
-      manifest = <<~PP
+      scope_manifest = <<~PP
+        kea_dhcp_v4_scope { 'test-subnet':
+          ensure  => present,
+          id      => 1,
+          subnet  => '192.0.2.0/24',
+          pools   => ['192.0.2.10 - 192.0.2.200'],
+        }
+      PP
+
+      reservation_manifest = <<~PP
         kea_dhcp_v4_reservation { 'server-1':
           ensure          => present,
           identifier_type => 'hw-address',
@@ -34,8 +43,9 @@ describe 'kea_dhcp_v4_reservation provider' do
         }
       PP
 
-      apply_manifest(manifest, catch_failures: true)
-      apply_manifest(manifest, catch_changes: true)
+      apply_manifest(scope_manifest, catch_failures: true)
+      apply_manifest(reservation_manifest, catch_failures: true)
+      apply_manifest(reservation_manifest, catch_changes: true)
 
       config = JSON.parse(run_shell("cat #{config_path}").stdout)
       subnet = config['Dhcp4']['subnet4'].find { |s| s['id'] == 1 }
@@ -50,7 +60,16 @@ describe 'kea_dhcp_v4_reservation provider' do
 
   context 'when creating a reservation with client-id' do
     it 'adds the reservation using client-id' do
-      manifest = <<~PP
+      scope_manifest = <<~PP
+        kea_dhcp_v4_scope { 'test-subnet':
+          ensure  => present,
+          id      => 1,
+          subnet  => '192.0.2.0/24',
+          pools   => ['192.0.2.10 - 192.0.2.200'],
+        }
+      PP
+
+      reservation_manifest = <<~PP
         kea_dhcp_v4_reservation { 'client-1':
           ensure          => present,
           identifier_type => 'client-id',
@@ -59,8 +78,9 @@ describe 'kea_dhcp_v4_reservation provider' do
         }
       PP
 
-      apply_manifest(manifest, catch_failures: true)
-      apply_manifest(manifest, catch_changes: true)
+      apply_manifest(scope_manifest, catch_failures: true)
+      apply_manifest(reservation_manifest, catch_failures: true)
+      apply_manifest(reservation_manifest, catch_changes: true)
 
       config = JSON.parse(run_shell("cat #{config_path}").stdout)
       subnet = config['Dhcp4']['subnet4'].find { |s| s['id'] == 1 }
@@ -73,7 +93,16 @@ describe 'kea_dhcp_v4_reservation provider' do
 
   context 'when adding a hostname to a reservation' do
     it 'includes the hostname in the reservation' do
-      manifest = <<~PP
+      scope_manifest = <<~PP
+        kea_dhcp_v4_scope { 'test-subnet':
+          ensure  => present,
+          id      => 1,
+          subnet  => '192.0.2.0/24',
+          pools   => ['192.0.2.10 - 192.0.2.200'],
+        }
+      PP
+
+      reservation_manifest = <<~PP
         kea_dhcp_v4_reservation { 'alice-laptop':
           ensure          => present,
           identifier_type => 'hw-address',
@@ -83,8 +112,9 @@ describe 'kea_dhcp_v4_reservation provider' do
         }
       PP
 
-      apply_manifest(manifest, catch_failures: true)
-      apply_manifest(manifest, catch_changes: true)
+      apply_manifest(scope_manifest, catch_failures: true)
+      apply_manifest(reservation_manifest, catch_failures: true)
+      apply_manifest(reservation_manifest, catch_changes: true)
 
       config = JSON.parse(run_shell("cat #{config_path}").stdout)
       subnet = config['Dhcp4']['subnet4'].find { |s| s['id'] == 1 }
@@ -98,7 +128,16 @@ describe 'kea_dhcp_v4_reservation provider' do
 
   context 'when managing multiple reservations' do
     it 'aggregates all reservations in the same subnet' do
-      manifest = <<~PP
+      scope_manifest = <<~PP
+        kea_dhcp_v4_scope { 'test-subnet':
+          ensure  => present,
+          id      => 1,
+          subnet  => '192.0.2.0/24',
+          pools   => ['192.0.2.10 - 192.0.2.200'],
+        }
+      PP
+
+      reservations_manifest = <<~PP
         kea_dhcp_v4_reservation { 'host-a':
           ensure          => present,
           identifier_type => 'hw-address',
@@ -122,8 +161,9 @@ describe 'kea_dhcp_v4_reservation provider' do
         }
       PP
 
-      apply_manifest(manifest, catch_failures: true)
-      apply_manifest(manifest, catch_changes: true)
+      apply_manifest(scope_manifest, catch_failures: true)
+      apply_manifest(reservations_manifest, catch_failures: true)
+      apply_manifest(reservations_manifest, catch_changes: true)
 
       config = JSON.parse(run_shell("cat #{config_path}").stdout)
       subnet = config['Dhcp4']['subnet4'].find { |s| s['id'] == 1 }
@@ -136,7 +176,16 @@ describe 'kea_dhcp_v4_reservation provider' do
 
   context 'when removing a reservation' do
     before(:each) do
-      manifest = <<~PP
+      scope_manifest = <<~PP
+        kea_dhcp_v4_scope { 'test-subnet':
+          ensure  => present,
+          id      => 1,
+          subnet  => '192.0.2.0/24',
+          pools   => ['192.0.2.10 - 192.0.2.200'],
+        }
+      PP
+
+      reservation_manifest = <<~PP
         kea_dhcp_v4_reservation { 'temp-host':
           ensure          => present,
           identifier_type => 'hw-address',
@@ -144,7 +193,9 @@ describe 'kea_dhcp_v4_reservation provider' do
           ip_address      => '192.0.2.99',
         }
       PP
-      apply_manifest(manifest, catch_failures: true)
+
+      apply_manifest(scope_manifest, catch_failures: true)
+      apply_manifest(reservation_manifest, catch_failures: true)
     end
 
     it 'removes the reservation from the subnet' do
@@ -170,7 +221,16 @@ describe 'kea_dhcp_v4_reservation provider' do
 
   context 'when the configuration preserves unmanaged data' do
     it 'keeps other subnet properties intact' do
-      manifest = <<~PP
+      scope_manifest = <<~PP
+        kea_dhcp_v4_scope { 'test-subnet':
+          ensure  => present,
+          id      => 1,
+          subnet  => '192.0.2.0/24',
+          pools   => ['192.0.2.10 - 192.0.2.200'],
+        }
+      PP
+
+      reservation_manifest = <<~PP
         kea_dhcp_v4_reservation { 'new-reservation':
           ensure          => present,
           identifier_type => 'hw-address',
@@ -179,7 +239,8 @@ describe 'kea_dhcp_v4_reservation provider' do
         }
       PP
 
-      apply_manifest(manifest, catch_failures: true)
+      apply_manifest(scope_manifest, catch_failures: true)
+      apply_manifest(reservation_manifest, catch_failures: true)
 
       config = JSON.parse(run_shell("cat #{config_path}").stdout)
       subnet = config['Dhcp4']['subnet4'].find { |s| s['id'] == 1 }

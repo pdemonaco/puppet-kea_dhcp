@@ -211,7 +211,6 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
       end
       @property_hash.clear
       @property_flush.clear
-      self.class.save_if_dirty(config_path)
       return
     end
 
@@ -243,7 +242,6 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
     reservations << entry unless existing_reservation
 
     self.class.mark_dirty(config_path)
-    self.class.save_if_dirty(config_path)
 
     @property_hash = self.class.reservation_to_resource_hash(
       { scope_id: subnet['id'], reservation: entry },

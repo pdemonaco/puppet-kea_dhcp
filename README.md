@@ -89,6 +89,42 @@ kea_dhcp_v4_scope { 'subnet-b':
 
 Multiple scopes are aggregated into a single configuration file. The provider preserves unmanaged keys in the configuration, allowing manual additions to coexist with Puppet-managed resources.
 
+### Host Reservations
+
+Reserve specific IP addresses for known hosts using `kea_dhcp_v4_reservation`. The subnet is automatically detected from the IP address:
+
+```puppet
+# Reserve using MAC address
+kea_dhcp_v4_reservation { 'file-server':
+  ensure          => present,
+  identifier_type => 'hw-address',
+  identifier      => '00:11:22:33:44:55',
+  ip_address      => '192.0.2.10',
+  hostname        => 'fileserver',
+}
+
+# Reserve using client-id
+kea_dhcp_v4_reservation { 'printer':
+  ensure          => present,
+  identifier_type => 'client-id',
+  identifier      => '01:aa:bb:cc:dd:ee:ff',
+  ip_address      => '192.0.2.20',
+  hostname        => 'printer-1',
+}
+
+# Reservation without hostname
+kea_dhcp_v4_reservation { 'laptop':
+  ensure          => present,
+  identifier_type => 'hw-address',
+  identifier      => 'a1:b2:c3:d4:e5:f6',
+  ip_address      => '192.0.2.30',
+}
+```
+
+The provider automatically finds the correct subnet by matching the IP address against configured subnet ranges. You can also explicitly specify the subnet using `scope_id` if needed.
+
+Uniqueness is enforced within each subnet - duplicate identifiers, IP addresses, or hostnames will be rejected.
+
 ### Hiera Example
 
 ```yaml
