@@ -15,6 +15,7 @@
 
 ### Resource types
 
+* [`kea_dhcp_v4_reservation`](#kea_dhcp_v4_reservation): Manages DHCPv4 host reservations within a subnet in the Kea kea-dhcp4.json configuration file.
 * [`kea_dhcp_v4_scope`](#kea_dhcp_v4_scope): Manages DHCPv4 subnets within the Kea kea-dhcp4.json configuration file.
 * [`kea_dhcp_v4_server`](#kea_dhcp_v4_server): Manages Kea DHCPv4 server level configuration.
 
@@ -374,6 +375,69 @@ Data type: `String`
 The name of the kea-dhcp-ddns service for this OS.
 
 ## Resource types
+
+### <a name="kea_dhcp_v4_reservation"></a>`kea_dhcp_v4_reservation`
+
+Manages DHCPv4 host reservations within a subnet in the Kea kea-dhcp4.json configuration file.
+
+#### Properties
+
+The following properties are available in the `kea_dhcp_v4_reservation` type.
+
+##### `ensure`
+
+Valid values: `present`, `absent`
+
+The basic property that the resource should be in.
+
+Default value: `present`
+
+##### `hostname`
+
+Optional hostname for the reservation.
+
+##### `identifier`
+
+The MAC address (hw-address) or client identifier value.
+
+##### `identifier_type`
+
+Valid values: `hw-address`, `client-id`
+
+Type of identifier: hw-address or client-id.
+
+##### `ip_address`
+
+The reserved IPv4 address.
+
+##### `scope_id`
+
+The numeric identifier for the subnet where this reservation belongs. Optional - will be auto-detected from ip_address if not specified.
+
+#### Parameters
+
+The following parameters are available in the `kea_dhcp_v4_reservation` type.
+
+* [`config_path`](#-kea_dhcp_v4_reservation--config_path)
+* [`name`](#-kea_dhcp_v4_reservation--name)
+* [`provider`](#-kea_dhcp_v4_reservation--provider)
+
+##### <a name="-kea_dhcp_v4_reservation--config_path"></a>`config_path`
+
+Path to the kea-dhcp4 configuration file.
+
+Default value: `/etc/kea/kea-dhcp4.conf`
+
+##### <a name="-kea_dhcp_v4_reservation--name"></a>`name`
+
+namevar
+
+A unique identifier for the reservation used only by Puppet.
+
+##### <a name="-kea_dhcp_v4_reservation--provider"></a>`provider`
+
+The specific backend to use for this `kea_dhcp_v4_reservation` resource. You will seldom need to specify this --- Puppet
+will usually discover the appropriate provider for your platform.
 
 ### <a name="kea_dhcp_v4_scope"></a>`kea_dhcp_v4_scope`
 
