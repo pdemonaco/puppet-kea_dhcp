@@ -26,7 +26,7 @@ describe provider_class do
   end
 
   context 'when creating a new reservation with hw-address' do
-    it 'adds the reservation to the subnet' do
+    it 'adds the reservation to the subnet by auto-detecting from IP' do
       write_config(
         config_path,
         'Dhcp4' => {
@@ -38,7 +38,6 @@ describe provider_class do
 
       resource = type_class.new(
         name: 'server-1',
-        scope_id: 1,
         identifier_type: 'hw-address',
         identifier: '1a:1b:1c:1d:1e:1f',
         ip_address: '192.0.2.100',
@@ -76,7 +75,6 @@ describe provider_class do
 
       resource = type_class.new(
         name: 'alice-laptop',
-        scope_id: 1,
         identifier_type: 'hw-address',
         identifier: '0a:0b:0c:0d:0e:0f',
         ip_address: '192.0.2.101',
@@ -115,7 +113,6 @@ describe provider_class do
 
       resource = type_class.new(
         name: 'client-1',
-        scope_id: 1,
         identifier_type: 'client-id',
         identifier: '01:11:22:33:44:55:66',
         ip_address: '192.0.2.102',
@@ -173,7 +170,6 @@ describe provider_class do
 
       resource = type_class.new(
         name: 'server-1',
-        scope_id: 1,
         identifier_type: 'hw-address',
         identifier: '1a:1b:1c:1d:1e:1f',
         ip_address: '192.0.2.150',
@@ -230,7 +226,6 @@ describe provider_class do
 
       resource = type_class.new(
         name: 'remove-me',
-        scope_id: 1,
         identifier_type: 'hw-address',
         identifier: '1a:1b:1c:1d:1e:1f',
         ip_address: '192.0.2.100',
@@ -277,7 +272,6 @@ describe provider_class do
 
       resource = type_class.new(
         name: 'duplicate',
-        scope_id: 1,
         identifier_type: 'hw-address',
         identifier: '1a:1b:1c:1d:1e:1f',
         ip_address: '192.0.2.101',
@@ -316,7 +310,6 @@ describe provider_class do
 
       resource = type_class.new(
         name: 'duplicate-ip',
-        scope_id: 1,
         identifier_type: 'hw-address',
         identifier: '2a:2b:2c:2d:2e:2f',
         ip_address: '192.0.2.100',
@@ -356,7 +349,6 @@ describe provider_class do
 
       resource = type_class.new(
         name: 'duplicate-hostname',
-        scope_id: 1,
         identifier_type: 'hw-address',
         identifier: '2a:2b:2c:2d:2e:2f',
         ip_address: '192.0.2.101',
@@ -374,8 +366,46 @@ describe provider_class do
     end
   end
 
+  context 'with multiple subnets' do
+    it 'auto-detects the correct subnet from IP address' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'subnet4' => [
+            { 'id' => 1, 'subnet' => '192.0.2.0/24' },
+            { 'id' => 2, 'subnet' => '10.0.0.0/24' },
+            { 'id' => 3, 'subnet' => '172.16.0.0/16' },
+          ],
+        },
+      )
+
+      resource = type_class.new(
+        name: 'auto-detect',
+        identifier_type: 'hw-address',
+        identifier: 'aa:bb:cc:dd:ee:ff',
+        ip_address: '172.16.5.10',
+        config_path: config_path,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_uncontrolled!
+
+      config = JSON.parse(File.read(config_path))
+      subnet = config['Dhcp4']['subnet4'].find { |s| s['id'] == 3 }
+      reservation = subnet['reservations'].first
+
+      expect(reservation['hw-address']).to eq('aa:bb:cc:dd:ee:ff')
+      expect(reservation['ip-address']).to eq('172.16.5.10')
+    end
+  end
+
   context 'when the subnet does not exist' do
-    it 'raises an error' do
+    it 'raises an error with explicit scope_id' do
       write_config(
         config_path,
         'Dhcp4' => {
@@ -401,6 +431,33 @@ describe provider_class do
       provider.create
 
       expect { provider.flush }.to raise_error(Puppet::Error, %r{Cannot find subnet with id 99})
+    end
+
+    it 'raises an error when IP address does not match any subnet' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'subnet4' => [
+            { 'id' => 1, 'subnet' => '192.0.2.0/24' },
+          ],
+        },
+      )
+
+      resource = type_class.new(
+        name: 'no-match',
+        identifier_type: 'hw-address',
+        identifier: '1a:1b:1c:1d:1e:1f',
+        ip_address: '10.0.0.100',
+        config_path: config_path,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+
+      expect { provider.flush }.to raise_error(Puppet::Error, %r{Cannot find subnet containing IP address 10\.0\.0\.100})
     end
   end
 end

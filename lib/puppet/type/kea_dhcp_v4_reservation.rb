@@ -15,12 +15,21 @@ Puppet::Type.newtype(:kea_dhcp_v4_reservation) do
   ensurable
 
   newproperty(:scope_id) do
-    desc 'The numeric identifier for the subnet where this reservation belongs.'
+    desc 'The numeric identifier for the subnet where this reservation belongs. Optional - will be auto-detected from ip_address if not specified.'
 
     munge do |value|
+      return value if value.nil? || value == :auto || value == 'auto'
+
       Integer(value)
     rescue ArgumentError
       raise ArgumentError, "Scope id must be an integer, got #{value.inspect}"
+    end
+
+    def insync?(is)
+      # Always in sync if we're auto-detecting
+      return true if should.nil? || should == :auto
+
+      super
     end
   end
 
@@ -69,7 +78,6 @@ Puppet::Type.newtype(:kea_dhcp_v4_reservation) do
   validate do
     return if self[:ensure] == :absent
 
-    raise ArgumentError, 'scope_id is required' if self[:scope_id].nil?
     raise ArgumentError, 'identifier_type is required' if self[:identifier_type].nil?
     raise ArgumentError, 'identifier is required' if self[:identifier].nil?
     raise ArgumentError, 'ip_address is required' if self[:ip_address].nil?

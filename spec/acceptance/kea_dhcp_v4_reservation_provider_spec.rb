@@ -24,11 +24,10 @@ describe 'kea_dhcp_v4_reservation provider' do
   end
 
   context 'when creating a reservation with hw-address' do
-    it 'adds the reservation to the subnet' do
+    it 'adds the reservation to the subnet by auto-detecting from IP' do
       manifest = <<~PP
         kea_dhcp_v4_reservation { 'server-1':
           ensure          => present,
-          scope_id        => 1,
           identifier_type => 'hw-address',
           identifier      => '1a:1b:1c:1d:1e:1f',
           ip_address      => '192.0.2.100',
@@ -54,7 +53,6 @@ describe 'kea_dhcp_v4_reservation provider' do
       manifest = <<~PP
         kea_dhcp_v4_reservation { 'client-1':
           ensure          => present,
-          scope_id        => 1,
           identifier_type => 'client-id',
           identifier      => '01:11:22:33:44:55:66',
           ip_address      => '192.0.2.101',
@@ -78,7 +76,6 @@ describe 'kea_dhcp_v4_reservation provider' do
       manifest = <<~PP
         kea_dhcp_v4_reservation { 'alice-laptop':
           ensure          => present,
-          scope_id        => 1,
           identifier_type => 'hw-address',
           identifier      => '0a:0b:0c:0d:0e:0f',
           ip_address      => '192.0.2.102',
@@ -104,7 +101,6 @@ describe 'kea_dhcp_v4_reservation provider' do
       manifest = <<~PP
         kea_dhcp_v4_reservation { 'host-a':
           ensure          => present,
-          scope_id        => 1,
           identifier_type => 'hw-address',
           identifier      => 'aa:aa:aa:aa:aa:aa',
           ip_address      => '192.0.2.50',
@@ -112,7 +108,6 @@ describe 'kea_dhcp_v4_reservation provider' do
 
         kea_dhcp_v4_reservation { 'host-b':
           ensure          => present,
-          scope_id        => 1,
           identifier_type => 'hw-address',
           identifier      => 'bb:bb:bb:bb:bb:bb',
           ip_address      => '192.0.2.51',
@@ -121,7 +116,6 @@ describe 'kea_dhcp_v4_reservation provider' do
 
         kea_dhcp_v4_reservation { 'host-c':
           ensure          => present,
-          scope_id        => 1,
           identifier_type => 'client-id',
           identifier      => 'cc:cc:cc:cc:cc:cc',
           ip_address      => '192.0.2.52',
@@ -145,7 +139,6 @@ describe 'kea_dhcp_v4_reservation provider' do
       manifest = <<~PP
         kea_dhcp_v4_reservation { 'temp-host':
           ensure          => present,
-          scope_id        => 1,
           identifier_type => 'hw-address',
           identifier      => 'ff:ff:ff:ff:ff:ff',
           ip_address      => '192.0.2.99',
@@ -158,7 +151,6 @@ describe 'kea_dhcp_v4_reservation provider' do
       manifest = <<~PP
         kea_dhcp_v4_reservation { 'temp-host':
           ensure          => absent,
-          scope_id        => 1,
           identifier_type => 'hw-address',
           identifier      => 'ff:ff:ff:ff:ff:ff',
           ip_address      => '192.0.2.99',
@@ -181,7 +173,6 @@ describe 'kea_dhcp_v4_reservation provider' do
       manifest = <<~PP
         kea_dhcp_v4_reservation { 'new-reservation':
           ensure          => present,
-          scope_id        => 1,
           identifier_type => 'hw-address',
           identifier      => 'dd:dd:dd:dd:dd:dd',
           ip_address      => '192.0.2.201',

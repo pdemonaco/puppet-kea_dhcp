@@ -5,6 +5,8 @@ require 'puppet_x/kea_dhcp/provider/json'
 Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaDhcp::Provider::Json) do
   desc 'Manages Kea DHCPv4 host reservations stored in the kea-dhcp4 JSON configuration.'
 
+  require 'ipaddr'
+
   RESERVATIONS_KEY = 'reservations'
 
   def initialize(value = {})
@@ -81,7 +83,7 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
   def self.find_reservation(reservations, name, scope_id, identifier_type, identifier)
     reservations.each do |entry|
       reservation = entry[:reservation]
-      next unless entry[:scope_id] == scope_id
+      next if scope_id && entry[:scope_id] != scope_id
 
       return entry if reservation_name(reservation, entry[:scope_id]) == name
 
@@ -90,6 +92,21 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
         return entry if actual_type == identifier_type && reservation[identifier_type] == identifier
       end
     end
+    nil
+  end
+
+  def self.find_subnet_for_ip(subnets, ip_address)
+    return nil unless ip_address
+
+    target_ip = IPAddr.new(ip_address)
+
+    subnets.each do |subnet|
+      next unless subnet['subnet']
+
+      subnet_cidr = IPAddr.new(subnet['subnet'])
+      return subnet if subnet_cidr.include?(target_ip)
+    end
+
     nil
   end
 
@@ -158,11 +175,22 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
     config[self.class::DHCP4_KEY][self.class::SUBNET4_KEY] ||= []
     subnets = config[self.class::DHCP4_KEY][self.class::SUBNET4_KEY]
 
+    # Determine target subnet - either by explicit scope_id or by finding the subnet containing the IP
     target_scope_id = value_for(:scope_id)
-    subnet = subnets.find { |s| s['id'] == target_scope_id }
+    target_ip = value_for(:ip_address)
+
+    subnet = if target_scope_id && target_scope_id != :auto
+               subnets.find { |s| s['id'] == target_scope_id }
+             else
+               self.class.find_subnet_for_ip(subnets, target_ip)
+             end
+
+    if !subnet && target_scope_id && target_scope_id != :auto
+      raise Puppet::Error, "Cannot find subnet with id #{target_scope_id}"
+    end
 
     unless subnet
-      raise Puppet::Error, "Cannot find subnet with id #{target_scope_id}"
+      raise Puppet::Error, "Cannot find subnet containing IP address #{target_ip}. Ensure a kea_dhcp_v4_scope exists that includes this IP."
     end
 
     subnet[RESERVATIONS_KEY] ||= []
@@ -187,7 +215,7 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
       return
     end
 
-    validate_uniqueness(reservations, existing_reservation)
+    validate_uniqueness(reservations, existing_reservation, subnet)
 
     entry = existing_reservation || {}
     entry['user-context'] ||= {}
@@ -218,7 +246,7 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
     self.class.save_if_dirty(config_path)
 
     @property_hash = self.class.reservation_to_resource_hash(
-      { scope_id: target_scope_id, reservation: entry },
+      { scope_id: subnet['id'], reservation: entry },
       nil,
       config_path,
     )
@@ -240,28 +268,30 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
     end
   end
 
-  def validate_uniqueness(reservations, existing_reservation)
+  def validate_uniqueness(reservations, existing_reservation, subnet)
     identifier_type = value_for(:identifier_type).to_s
     identifier = value_for(:identifier)
     ip_address = value_for(:ip_address)
     hostname = value_for(:hostname)
+    subnet_id = subnet['id']
+    subnet_cidr = subnet['subnet']
 
     reservations.each do |r|
       next if r.equal?(existing_reservation)
 
       # Check identifier uniqueness
       if r[identifier_type] == identifier
-        raise Puppet::Error, "Reservation with #{identifier_type} '#{identifier}' already exists in subnet #{value_for(:scope_id)}"
+        raise Puppet::Error, "Reservation with #{identifier_type} '#{identifier}' already exists in subnet #{subnet_id} (#{subnet_cidr})"
       end
 
       # Check IP address uniqueness
       if r['ip-address'] == ip_address
-        raise Puppet::Error, "Reservation with ip-address '#{ip_address}' already exists in subnet #{value_for(:scope_id)}"
+        raise Puppet::Error, "Reservation with ip-address '#{ip_address}' already exists in subnet #{subnet_id} (#{subnet_cidr})"
       end
 
       # Check hostname uniqueness
       if hostname && !hostname.empty? && r['hostname'] == hostname
-        raise Puppet::Error, "Reservation with hostname '#{hostname}' already exists in subnet #{value_for(:scope_id)}"
+        raise Puppet::Error, "Reservation with hostname '#{hostname}' already exists in subnet #{subnet_id} (#{subnet_cidr})"
       end
     end
   end
