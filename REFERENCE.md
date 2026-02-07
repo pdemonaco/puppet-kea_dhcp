@@ -15,6 +15,8 @@
 
 ### Resource types
 
+* [`kea_ddns_domain`](#kea_ddns_domain): Manages Kea DHCP-DDNS domain configurations (forward or reverse).
+* [`kea_ddns_server`](#kea_ddns_server): Manages Kea DHCP-DDNS server level configuration.
 * [`kea_dhcp_v4_reservation`](#kea_dhcp_v4_reservation): Manages DHCPv4 host reservations within a subnet in the Kea kea-dhcp4.json configuration file.
 * [`kea_dhcp_v4_scope`](#kea_dhcp_v4_scope): Manages DHCPv4 subnets within the Kea kea-dhcp4.json configuration file.
 * [`kea_dhcp_v4_server`](#kea_dhcp_v4_server): Manages Kea DHCPv4 server level configuration.
@@ -376,6 +378,142 @@ The name of the kea-dhcp-ddns service for this OS.
 
 ## Resource types
 
+### <a name="kea_ddns_domain"></a>`kea_ddns_domain`
+
+Manages Kea DHCP-DDNS domain configurations (forward or reverse).
+
+#### Properties
+
+The following properties are available in the `kea_ddns_domain` type.
+
+##### `direction`
+
+The direction of this domain: "forward" or "reverse".
+
+##### `dns_servers`
+
+Array of DNS server configurations (ip-address, port, optional key-name).
+
+Default value: `[]`
+
+##### `domain_name`
+
+The DNS domain name (e.g., "example.com." or "1.168.192.in-addr.arpa.").
+
+##### `ensure`
+
+Valid values: `present`, `absent`
+
+The basic property that the resource should be in.
+
+Default value: `present`
+
+##### `key_name`
+
+Optional TSIG key name to use for all DNS servers in this domain (unless overridden per-server).
+
+#### Parameters
+
+The following parameters are available in the `kea_ddns_domain` type.
+
+* [`config_path`](#-kea_ddns_domain--config_path)
+* [`name`](#-kea_ddns_domain--name)
+* [`provider`](#-kea_ddns_domain--provider)
+
+##### <a name="-kea_ddns_domain--config_path"></a>`config_path`
+
+Path to the kea-dhcp-ddns configuration file.
+
+Default value: `/etc/kea/kea-dhcp-ddns.conf`
+
+##### <a name="-kea_ddns_domain--name"></a>`name`
+
+namevar
+
+The Puppet identifier for this DDNS domain.
+
+##### <a name="-kea_ddns_domain--provider"></a>`provider`
+
+The specific backend to use for this `kea_ddns_domain` resource. You will seldom need to specify this --- Puppet will
+usually discover the appropriate provider for your platform.
+
+### <a name="kea_ddns_server"></a>`kea_ddns_server`
+
+Manages Kea DHCP-DDNS server level configuration.
+
+#### Properties
+
+The following properties are available in the `kea_ddns_server` type.
+
+##### `dns_server_timeout`
+
+Maximum amount of time to wait for a response from a DNS server, in milliseconds.
+
+Default value: `500`
+
+##### `ensure`
+
+Valid values: `present`, `absent`
+
+The basic property that the resource should be in.
+
+Default value: `present`
+
+##### `ip_address`
+
+IP address on which D2 listens for requests.
+
+Default value: `127.0.0.1`
+
+##### `ncr_format`
+
+Packet format to use when sending requests to D2.
+
+Default value: `JSON`
+
+##### `ncr_protocol`
+
+Socket protocol to use when sending requests to D2.
+
+Default value: `UDP`
+
+##### `port`
+
+Port on which D2 listens for requests.
+
+Default value: `53_001`
+
+##### `tsig_keys`
+
+Array of TSIG key configurations for authenticating DNS updates.
+
+Default value: `[]`
+
+#### Parameters
+
+The following parameters are available in the `kea_ddns_server` type.
+
+* [`config_path`](#-kea_ddns_server--config_path)
+* [`name`](#-kea_ddns_server--name)
+* [`provider`](#-kea_ddns_server--provider)
+
+##### <a name="-kea_ddns_server--config_path"></a>`config_path`
+
+Path to the kea-dhcp-ddns configuration file.
+
+Default value: `/etc/kea/kea-dhcp-ddns.conf`
+
+##### <a name="-kea_ddns_server--name"></a>`name`
+
+namevar
+
+The unique identifier for the DHCP-DDNS server configuration. Must be dhcp-ddns.
+
+##### <a name="-kea_ddns_server--provider"></a>`provider`
+
+The specific backend to use for this `kea_ddns_server` resource. You will seldom need to specify this --- Puppet will
+usually discover the appropriate provider for your platform.
+
 ### <a name="kea_dhcp_v4_reservation"></a>`kea_dhcp_v4_reservation`
 
 Manages DHCPv4 host reservations within a subnet in the Kea kea-dhcp4.json configuration file.
@@ -509,6 +647,10 @@ Manages Kea DHCPv4 server level configuration.
 #### Properties
 
 The following properties are available in the `kea_dhcp_v4_server` type.
+
+##### `dhcp_ddns`
+
+DHCP-DDNS connectivity and behavioral parameters.
 
 ##### `ensure`
 
