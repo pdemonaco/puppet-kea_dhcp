@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'puppet_x/kea_dhcp/provider/json'
+require 'puppet_x/kea_dhcp/provider/dhcp4_json'
 
-Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaDhcp::Provider::Json) do
+Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaDhcp::Provider::Dhcp4Json) do
   desc 'Manages Kea DHCPv4 host reservations stored in the kea-dhcp4 JSON configuration.'
 
   require 'ipaddr'

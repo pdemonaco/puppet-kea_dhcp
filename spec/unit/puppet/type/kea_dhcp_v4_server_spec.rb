@@ -218,6 +218,84 @@ describe Puppet::Type.type(:kea_dhcp_v4_server) do
     end
   end
 
+  describe 'dhcp_ddns property' do
+    it 'accepts valid DHCP-DDNS configuration' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        dhcp_ddns: {
+          'enable-updates' => true,
+          'server-ip' => '127.0.0.1',
+          'server-port' => 53_001,
+          'ncr-protocol' => 'UDP',
+        },
+      )
+
+      expect(resource[:dhcp_ddns]).to eq({
+                                           'enable-updates' => true,
+                                           'server-ip' => '127.0.0.1',
+                                           'server-port' => 53_001,
+                                           'ncr-protocol' => 'UDP',
+                                         })
+    end
+
+    it 'rejects invalid enable-updates values' do
+      expect {
+        described_class.new(
+          name: 'dhcp4',
+          lease_database: base_lease_db,
+          dhcp_ddns: { 'enable-updates' => 'yes' },
+        )
+      }.to raise_error(Puppet::ResourceError, %r{enable-updates must be a boolean})
+    end
+
+    it 'rejects invalid server-port values' do
+      expect {
+        described_class.new(
+          name: 'dhcp4',
+          lease_database: base_lease_db,
+          dhcp_ddns: { 'server-port' => 70_000 },
+        )
+      }.to raise_error(Puppet::ResourceError, %r{server-port must be between 1 and 65535})
+    end
+
+    it 'rejects invalid ncr-protocol values' do
+      expect {
+        described_class.new(
+          name: 'dhcp4',
+          lease_database: base_lease_db,
+          dhcp_ddns: { 'ncr-protocol' => 'HTTP' },
+        )
+      }.to raise_error(Puppet::ResourceError, %r{ncr-protocol must be one of: UDP, TCP})
+    end
+
+    it 'rejects invalid ddns-replace-client-name values' do
+      expect {
+        described_class.new(
+          name: 'dhcp4',
+          lease_database: base_lease_db,
+          dhcp_ddns: { 'ddns-replace-client-name' => 'invalid' },
+        )
+      }.to raise_error(Puppet::ResourceError, %r{ddns-replace-client-name must be one of})
+    end
+
+    it 'converts symbol keys to strings' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        dhcp_ddns: {
+          'enable-updates': true,
+          'server-ip': '127.0.0.1',
+        },
+      )
+
+      expect(resource[:dhcp_ddns]).to eq({
+                                           'enable-updates' => true,
+                                           'server-ip' => '127.0.0.1',
+                                         })
+    end
+  end
+
   describe 'autorequire' do
     it 'autorequires the config file' do
       catalog = Puppet::Resource::Catalog.new

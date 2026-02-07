@@ -120,6 +120,62 @@ describe provider_class do
       config = read_config(config_path)
       expect(config['Dhcp4']).not_to have_key('hooks-libraries')
     end
+
+    it 'writes dhcp-ddns configuration when provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        dhcp_ddns: {
+          'enable-updates' => true,
+          'server-ip' => '127.0.0.1',
+          'server-port' => 53_001,
+          'ddns-send-updates' => true,
+        },
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.post_resource_eval
+
+      config = read_config(config_path)
+      dhcp4 = config['Dhcp4']
+
+      expect(dhcp4['dhcp-ddns']).to include(
+        'enable-updates' => true,
+        'server-ip' => '127.0.0.1',
+        'server-port' => 53_001,
+        'ddns-send-updates' => true,
+      )
+    end
+
+    it 'does not write dhcp-ddns key when empty' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        dhcp_ddns: {},
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.post_resource_eval
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('dhcp-ddns')
+    end
   end
 
   context 'when updating server configuration' do
@@ -293,7 +349,7 @@ describe provider_class do
 
     before(:each) do
       instances_tempfile.close
-      stub_const('PuppetX::KeaDhcp::Provider::Json::DEFAULT_CONFIG_PATH', instances_config_path)
+      stub_const('PuppetX::KeaDhcp::Provider::Dhcp4Json::DEFAULT_CONFIG_PATH', instances_config_path)
     end
 
     after(:each) do
