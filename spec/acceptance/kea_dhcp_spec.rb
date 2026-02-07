@@ -2,7 +2,7 @@
 
 require 'spec_helper_acceptance'
 
-describe 'kea_dhcp class on Rocky 9' do
+describe 'kea_dhcp class on Rocky' do
   before(:all) do
     install_repository
   end
