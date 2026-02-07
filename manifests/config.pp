@@ -21,6 +21,9 @@
 # @param sensitive_db_password
 #   Sensitive value containing the password for the lease database user.
 #
+# @param dhcp_ddns
+#   Hash of DHCP-DDNS configuration settings to include in the DHCPv4 server configuration.
+#
 # @param backend
 #   The backend type used for storing leases. Used to determine which hooks libraries to load.
 class kea_dhcp::config (
@@ -30,6 +33,7 @@ class kea_dhcp::config (
   String $lease_database_host = $kea_dhcp::lease_database_host,
   Integer $lease_database_port = $kea_dhcp::lease_database_port,
   Array[Hash] $server_options = $kea_dhcp::array_dhcp4_server_options,
+  Optional[Hash] $dhcp_ddns = $kea_dhcp::dhcp_ddns,
   Sensitive[String] $sensitive_db_password = $kea_dhcp::sensitive_db_password,
   Kea_Dhcp::Backends $backend = $kea_dhcp::backend,
 ) {
@@ -38,7 +42,7 @@ class kea_dhcp::config (
     default      => [],
   }
 
-  kea_dhcp_v4_server { 'dhcp4':
+  $server_params = {
     ensure          => present,
     config_path     => $config_path,
     options         => $server_options,
@@ -51,5 +55,14 @@ class kea_dhcp::config (
       'host'     => $lease_database_host,
       'port'     => $lease_database_port,
     },
+  }
+
+  $final_params = $dhcp_ddns ? {
+    undef   => $server_params,
+    default => $server_params + { dhcp_ddns => $dhcp_ddns },
+  }
+
+  kea_dhcp_v4_server { 'dhcp4':
+    * => $final_params,
   }
 }

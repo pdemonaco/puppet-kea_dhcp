@@ -4,6 +4,7 @@ require 'spec_helper_acceptance'
 
 describe 'kea_dhcp class on Rocky' do
   before(:all) do
+    reset_kea_configs
     install_repository
   end
 
@@ -66,6 +67,19 @@ describe 'kea_dhcp class on Rocky' do
   end
 
   describe 'DDNS integration' do
+    # Ensure Kea is installed before configuring DDNS
+    # This allows the test to run independently of base installation
+    before(:all) do
+      base_manifest = <<~PP
+        class { 'kea_dhcp':
+          sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          enable_ddns           => false,
+          enable_ctrl_agent     => false,
+        }
+      PP
+      apply_manifest(base_manifest, catch_failures: true)
+    end
+
     let(:db_password) { 'LitmusP@ssw0rd!' }
     let(:manifest) do
       <<~PP
@@ -76,10 +90,7 @@ describe 'kea_dhcp class on Rocky' do
           ],
           enable_ddns                 => true,
           enable_ctrl_agent           => false,
-        }
-
-        kea_dhcp_v4_server { 'dhcp4':
-          dhcp_ddns => {
+          dhcp_ddns                   => {
             'enable-updates'                => true,
             'server-ip'                     => '127.0.0.1',
             'server-port'                   => 53001,
@@ -88,12 +99,6 @@ describe 'kea_dhcp class on Rocky' do
             'max-queue-size'                => 1024,
             'ncr-protocol'                  => 'UDP',
             'ncr-format'                    => 'JSON',
-            'ddns-send-updates'             => true,
-            'ddns-override-no-update'       => false,
-            'ddns-override-client-update'   => false,
-            'ddns-replace-client-name'      => 'never',
-            'ddns-generated-prefix'         => 'myhost',
-            'ddns-qualifying-suffix'        => '',
           },
         }
 
@@ -153,11 +158,11 @@ describe 'kea_dhcp class on Rocky' do
       expect(dhcp_ddns['enable-updates']).to be true
       expect(dhcp_ddns['server-ip']).to eq('127.0.0.1')
       expect(dhcp_ddns['server-port']).to eq(53_001)
+      expect(dhcp_ddns['sender-ip']).to eq('')
+      expect(dhcp_ddns['sender-port']).to eq(0)
+      expect(dhcp_ddns['max-queue-size']).to eq(1024)
       expect(dhcp_ddns['ncr-protocol']).to eq('UDP')
       expect(dhcp_ddns['ncr-format']).to eq('JSON')
-      expect(dhcp_ddns['ddns-send-updates']).to be true
-      expect(dhcp_ddns['ddns-replace-client-name']).to eq('never')
-      expect(dhcp_ddns['ddns-generated-prefix']).to eq('myhost')
     end
 
     it 'configures DDNS server in kea-dhcp-ddns.conf' do

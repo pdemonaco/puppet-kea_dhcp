@@ -6,6 +6,7 @@ describe 'kea_ddns_domain provider' do
   let(:config_path) { '/etc/kea/kea-dhcp-ddns.conf' }
 
   before :all do
+    reset_kea_configs
     install_repository
     # Install kea_dhcp to get kea-dhcp-ddns command
     base_manifest = <<~PP
