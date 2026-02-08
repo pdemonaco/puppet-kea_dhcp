@@ -24,6 +24,8 @@ Puppet::Type.type(:kea_ddns_server).provide(:json, parent: PuppetX::KeaDhcp::Pro
   def self.prefetch(resources)
     resources.group_by { |_, res| res[:config_path] || self::DEFAULT_CONFIG_PATH }.each do |path, grouped|
       self.server_config_path = path
+      # Clear cache to force fresh load from disk
+      config_cache.delete(path)
       config = config_for(path)
       server = ddns_config(config)
       next unless present?(server)

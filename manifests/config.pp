@@ -24,6 +24,27 @@
 # @param dhcp_ddns
 #   Hash of DHCP-DDNS configuration settings to include in the DHCPv4 server configuration.
 #
+# @param enable_ddns
+#   Whether to configure the DDNS server.
+#
+# @param ddns_ip_address
+#   IP address on which the DDNS server listens.
+#
+# @param ddns_port
+#   Port on which the DDNS server listens.
+#
+# @param ddns_server_timeout
+#   DNS server timeout in milliseconds.
+#
+# @param ddns_ncr_protocol
+#   DDNS communication protocol.
+#
+# @param ddns_ncr_format
+#   DDNS communication format.
+#
+# @param ddns_tsig_keys
+#   TSIG keys for DNS authentication.
+#
 # @param backend
 #   The backend type used for storing leases. Used to determine which hooks libraries to load.
 class kea_dhcp::config (
@@ -35,6 +56,13 @@ class kea_dhcp::config (
   Array[Hash] $server_options = $kea_dhcp::array_dhcp4_server_options,
   Optional[Hash] $dhcp_ddns = $kea_dhcp::dhcp_ddns,
   Sensitive[String] $sensitive_db_password = $kea_dhcp::sensitive_db_password,
+  Boolean $enable_ddns = $kea_dhcp::enable_ddns,
+  String $ddns_ip_address = $kea_dhcp::ddns_ip_address,
+  Stdlib::Port $ddns_port = $kea_dhcp::ddns_port,
+  Integer[1] $ddns_server_timeout = $kea_dhcp::ddns_server_timeout,
+  Enum['UDP', 'TCP'] $ddns_ncr_protocol = $kea_dhcp::ddns_ncr_protocol,
+  Enum['JSON'] $ddns_ncr_format = $kea_dhcp::ddns_ncr_format,
+  Array[Hash] $ddns_tsig_keys = $kea_dhcp::ddns_tsig_keys,
   Kea_Dhcp::Backends $backend = $kea_dhcp::backend,
 ) {
   $hooks_libraries = $backend ? {
@@ -64,5 +92,17 @@ class kea_dhcp::config (
 
   kea_dhcp_v4_server { 'dhcp4':
     * => $final_params,
+  }
+
+  if $enable_ddns {
+    kea_ddns_server { 'dhcp-ddns':
+      ensure             => present,
+      ip_address         => $ddns_ip_address,
+      port               => $ddns_port,
+      dns_server_timeout => $ddns_server_timeout,
+      ncr_protocol       => $ddns_ncr_protocol,
+      ncr_format         => $ddns_ncr_format,
+      tsig_keys          => $ddns_tsig_keys,
+    }
   }
 }

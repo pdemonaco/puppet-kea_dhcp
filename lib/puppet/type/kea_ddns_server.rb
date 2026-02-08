@@ -143,4 +143,8 @@ Puppet::Type.newtype(:kea_ddns_server) do
   autorequire(:file) do
     [self[:config_path]]
   end
+
+  autobefore(:service) do
+    ['kea-dhcp-ddns']
+  end
 end

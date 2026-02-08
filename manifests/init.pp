@@ -31,6 +31,24 @@
 #   Hash of DHCP-DDNS configuration settings to include in the DHCPv4 server configuration.
 #   These settings control how the DHCPv4 server communicates with the DDNS server.
 #
+# @param ddns_ip_address
+#   IP address on which the DDNS server listens for requests.
+#
+# @param ddns_port
+#   Port on which the DDNS server listens for requests.
+#
+# @param ddns_server_timeout
+#   Maximum time to wait for DNS server response in milliseconds.
+#
+# @param ddns_ncr_protocol
+#   Protocol for DDNS server communication (UDP or TCP).
+#
+# @param ddns_ncr_format
+#   Format for DDNS server communication (JSON).
+#
+# @param ddns_tsig_keys
+#   Array of TSIG key configurations for DNS update authentication.
+#
 # @param lease_database_name
 #   Name of the PostgreSQL database to use for leases if that backend is selected.
 #
@@ -51,6 +69,12 @@ class kea_dhcp (
   Boolean $enable_dhcp6 = false,
   Boolean $enable_ddns = true,
   Boolean $enable_ctrl_agent = true,
+  String $ddns_ip_address = '127.0.0.1',
+  Stdlib::Port $ddns_port = 53001,
+  Integer[1] $ddns_server_timeout = 500,
+  Enum['UDP', 'TCP'] $ddns_ncr_protocol = 'UDP',
+  Enum['JSON'] $ddns_ncr_format = 'JSON',
+  Array[Hash] $ddns_tsig_keys = [],
   String $lease_database_name = 'kea',
   String $lease_database_user = 'kea',
   String $lease_database_host = '127.0.0.1',

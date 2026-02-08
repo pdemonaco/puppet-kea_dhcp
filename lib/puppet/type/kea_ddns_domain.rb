@@ -104,4 +104,8 @@ Puppet::Type.newtype(:kea_ddns_domain) do
   autorequire(:kea_ddns_server) do
     catalog.resources.select { |res| res.is_a?(Puppet::Type.type(:kea_ddns_server)) }.map(&:title)
   end
+
+  autobefore(:service) do
+    ['kea-dhcp-ddns']
+  end
 end
