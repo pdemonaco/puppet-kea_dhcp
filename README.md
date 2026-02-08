@@ -13,7 +13,7 @@
 
 ## Description
 
-The kea_dhcp module installs, configures, and manages the [ISC Kea DHCP](https://www.isc.org/kea/) server. It provisions a PostgreSQL backend for lease storage and provides custom types for managing DHCPv4 server configuration and subnet scopes.
+The kea_dhcp module installs, configures, and manages the [ISC Kea DHCP](https://www.isc.org/kea/) server. It provisions a PostgreSQL backend for lease storage and provides custom types for managing DHCPv4 server configuration, subnet scopes, host reservations, and Dynamic DNS (DDNS) integration.
 
 ## Setup
 
@@ -31,7 +31,7 @@ A dedicated PostgreSQL instance is created for lease storage. The instance runs 
 
 #### 3 - Configuration
 
-The module manages `/etc/kea/kea-dhcp4.conf` through custom resource types. Configuration changes are validated with `kea-dhcp4 -t` before being committed.
+The module manages `/etc/kea/kea-dhcp4.conf` and `/etc/kea/kea-dhcp-ddns.conf` through custom resource types. Configuration changes are validated with `kea-dhcp4 -t` and `kea-dhcp-ddns -t` respectively before being committed.
 
 ### Setup Requirements
 
@@ -124,6 +124,126 @@ kea_dhcp_v4_reservation { 'laptop':
 The provider automatically finds the correct subnet by matching the IP address against configured subnet ranges. You can also explicitly specify the subnet using `scope_id` if needed.
 
 Uniqueness is enforced within each subnet - duplicate identifiers, IP addresses, or hostnames will be rejected.
+
+### Dynamic DNS (DDNS)
+
+The module supports Kea's DHCP-DDNS integration, allowing automatic DNS updates when leases are assigned or released.
+
+#### Basic DDNS Configuration
+
+Enable DDNS by configuring both the DHCP server communication settings and the DDNS server itself:
+
+```puppet
+class { 'kea_dhcp':
+  sensitive_db_password => Sensitive('SecurePassword123!'),
+  enable_ddns          => true,
+
+  # DHCPv4 server DDNS connectivity settings
+  dhcp_ddns => {
+    'enable-updates'  => true,
+    'server-ip'       => '127.0.0.1',
+    'server-port'     => 53001,
+    'sender-ip'       => '',
+    'sender-port'     => 0,
+    'max-queue-size'  => 1024,
+    'ncr-protocol'    => 'UDP',
+    'ncr-format'      => 'JSON',
+  },
+
+  # DDNS server configuration
+  ddns_ip_address      => '127.0.0.1',
+  ddns_port            => 53001,
+  ddns_server_timeout  => 500,
+  ddns_ncr_protocol    => 'UDP',
+  ddns_ncr_format      => 'JSON',
+}
+```
+
+#### DDNS with TSIG Authentication
+
+Use TSIG keys to authenticate DNS updates:
+
+```puppet
+class { 'kea_dhcp':
+  sensitive_db_password => Sensitive('SecurePassword123!'),
+  enable_ddns          => true,
+
+  dhcp_ddns => {
+    'enable-updates' => true,
+    'server-ip'      => '127.0.0.1',
+    'server-port'    => 53001,
+  },
+
+  ddns_tsig_keys => [
+    {
+      'name'      => 'ddns-key',
+      'algorithm' => 'HMAC-SHA256',
+      'secret'    => 'LSWXnfkKZjdPJI5QxlpnfQ==',
+    },
+  ],
+}
+```
+
+#### DDNS Domain Configuration
+
+Define forward and reverse DNS zones using `kea_ddns_domain` resources:
+
+```puppet
+# Forward DNS zone
+kea_ddns_domain { 'forward-zone':
+  ensure      => present,
+  domain_name => 'example.com.',
+  direction   => 'forward',
+  key_name    => 'ddns-key',
+  dns_servers => [
+    {
+      'ip-address' => '192.0.2.53',
+      'port'       => 53,
+    },
+  ],
+}
+
+# Reverse DNS zone
+kea_ddns_domain { 'reverse-zone':
+  ensure      => present,
+  domain_name => '2.0.192.in-addr.arpa.',
+  direction   => 'reverse',
+  dns_servers => [
+    {
+      'ip-address' => '192.0.2.53',
+      'port'       => 53,
+      'key-name'   => 'ddns-key',  # Override per-server
+    },
+  ],
+}
+```
+
+#### DDNS Behavioral Parameters
+
+Control DDNS behavior at the DHCPv4 server level:
+
+```puppet
+class { 'kea_dhcp':
+  sensitive_db_password => Sensitive('SecurePassword123!'),
+  dhcp_ddns => {
+    'enable-updates'                => true,
+    'server-ip'                     => '127.0.0.1',
+    'server-port'                   => 53001,
+
+    # Behavioral settings
+    'ddns-send-updates'             => true,
+    'ddns-override-no-update'       => false,
+    'ddns-override-client-update'   => false,
+    'ddns-replace-client-name'      => 'never',
+    'ddns-generated-prefix'         => 'myhost',
+    'ddns-qualifying-suffix'        => '',
+    'ddns-update-on-renew'          => false,
+    'ddns-conflict-resolution-mode' => 'check-with-dhcid',
+  },
+}
+```
+
+The DDNS server configuration is managed centrally through the `kea_dhcp` class. The module automatically creates the `kea_ddns_server` resource when `enable_ddns` is true, following the same pattern as the DHCPv4 server configuration.
 
 ### Hiera Example
 
