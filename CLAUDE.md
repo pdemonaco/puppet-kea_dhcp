@@ -14,39 +14,31 @@
 
 ## Build & Test Commands
 
-```bash
-# Install dependencies
-pdk bundle install
 
-# Run unit tests (rspec-puppet)
+### Validate Puppet syntax
+
+```bash
+pdk validate
+```
+
+### Unit Tests
+
+```bash
+# Run all unit tests
 pdk test unit
 
 # Run a single unit test file
 pdk test unit --tests=spec/classes/kea_dhcp_spec.rb
+```
 
-# Validate Puppet syntax
-pdk validate
+### Acceptance Tests
 
-# Provision the acceptance test environment
-pdk bundle exec rake 'litmus:provision_list[default]'
-pdk bundle exec rake litmus:install_agent
-
-# Run all acceptance tests (requires Litmus provisioning)
-pdk bundle exec rake litmus:install_module
+```bash
+# Run all acceptance tests
 pdk bundle exec rake litmus:acceptance:parallel
 
-# Get the hosts from the litmus inventory file
-HOSTS=$(yq '(.groups[] | .targets[] | .alias )' spec/fixtures/litmus_inventory.yaml)
-
-# Run a single acceptance test on each host
-TEST=spec/acceptance/kea_dhcp_spec.rb
-for H in $HOSTS
-do
-    TARGET_HOST="${H}" pdk bundle exec rspec "${TEST}"
-done
-
-# Teardown the docker container
-pdk bundle exec rake litmus:tear_down
+# Run a single acceptance test
+pdk-litmus-test spec/acceptance/kea_dhcp_spec.json
 ```
 
 ## Architecture
