@@ -67,19 +67,6 @@ describe 'kea_dhcp class on Rocky' do
   end
 
   describe 'DDNS integration' do
-    # Ensure Kea is installed before configuring DDNS
-    # This allows the test to run independently of base installation
-    before(:all) do
-      base_manifest = <<~PP
-        class { 'kea_dhcp':
-          sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
-          enable_ddns           => false,
-          enable_ctrl_agent     => false,
-        }
-      PP
-      apply_manifest(base_manifest, catch_failures: true)
-    end
-
     let(:db_password) { 'LitmusP@ssw0rd!' }
     let(:manifest) do
       <<~PP
@@ -100,20 +87,11 @@ describe 'kea_dhcp class on Rocky' do
             'ncr-protocol'                  => 'UDP',
             'ncr-format'                    => 'JSON',
           },
-        }
-
-        kea_ddns_server { 'dhcp-ddns':
-          ensure             => present,
-          ip_address         => '127.0.0.1',
-          port               => 53001,
-          dns_server_timeout => 500,
-          ncr_protocol       => 'UDP',
-          ncr_format         => 'JSON',
-          tsig_keys          => [
+          ddns_tsig_keys              => [
             {
-              name      => 'ddns-key',
-              algorithm => 'HMAC-SHA256',
-              secret    => 'LSWXnfkKZjdPJI5QxlpnfQ==',
+              'name'      => 'ddns-key',
+              'algorithm' => 'HMAC-SHA256',
+              'secret'    => 'LSWXnfkKZjdPJI5QxlpnfQ==',
             },
           ],
         }

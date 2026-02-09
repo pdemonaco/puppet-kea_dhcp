@@ -38,12 +38,8 @@ Puppet::Type.type(:kea_ddns_domain).provide(:json, parent: PuppetX::KeaDhcp::Pro
 
   def self.prefetch(resources)
     resources.group_by { |_, res| res[:config_path] || self::DEFAULT_CONFIG_PATH }.each do |path, grouped|
-      # Clear cache to force fresh load from disk
-      config_cache.delete(path)
       config = config_for(path)
       ddns = config.fetch(self::DDNS_KEY, {})
-      fwd = ddns.fetch(FORWARD_DDNS_KEY, {})
-      Puppet.warning("DOMAIN PREFETCH: forward-ddns has #{Array(fwd[DDNS_DOMAINS_KEY]).length} domains")
 
       grouped.each do |name, resource|
         direction = resource[:direction]
@@ -195,7 +191,6 @@ Puppet::Type.type(:kea_ddns_domain).provide(:json, parent: PuppetX::KeaDhcp::Pro
     end
 
     self.class.mark_dirty(config_path)
-    self.class.save_if_dirty(config_path)
 
     @property_hash = if ensure_state == :present
                        self.class.domain_to_hash(

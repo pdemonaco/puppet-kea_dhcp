@@ -37,12 +37,20 @@ class PuppetX::KeaDhcp::Provider::DdnsJson < Puppet::Provider
   USER_CONTEXT_KEY = 'user-context'
   PUPPET_NAME_KEY = 'puppet_name'
 
+  # Class variables shared across all DDNS providers
+  @@config_cache = {}
+  @@dirty_paths = Set.new
+  @@temp_configs = {}
+  @@staged_paths = Set.new
+  @@commit_controllers = Set.new
+  @@server_config_path = nil
+
   def self.config_cache
-    @config_cache ||= {}
+    @@config_cache
   end
 
   def self.dirty_paths
-    @dirty_paths ||= Set.new
+    @@dirty_paths
   end
 
   def self.config_for(path)
@@ -64,8 +72,14 @@ class PuppetX::KeaDhcp::Provider::DdnsJson < Puppet::Provider
   def self.default_config
     {
       DDNS_KEY => {
-        'forward-ddns' => {},
-        'reverse-ddns' => {},
+        'ip-address' => '127.0.0.1',
+        'port' => 53001,
+        'forward-ddns' => {
+          'ddns-domains' => [],
+        },
+        'reverse-ddns' => {
+          'ddns-domains' => [],
+        },
       },
     }
   end
@@ -75,16 +89,16 @@ class PuppetX::KeaDhcp::Provider::DdnsJson < Puppet::Provider
   end
 
   def self.clear_state!
-    config_cache.clear
-    dirty_paths.clear
-    temp_configs.clear
-    @server_config_path = nil
-    @commit_controllers = Set.new
-    staged_paths.clear
+    @@config_cache.clear
+    @@dirty_paths.clear
+    @@temp_configs.clear
+    @@server_config_path = nil
+    @@commit_controllers.clear
+    @@staged_paths.clear
   end
 
   def self.commit_controllers
-    @commit_controllers ||= Set.new
+    @@commit_controllers
   end
 
   def self.register_commit_controller(path)
@@ -95,8 +109,12 @@ class PuppetX::KeaDhcp::Provider::DdnsJson < Puppet::Provider
     commit_controllers.delete(path)
   end
 
-  class << self
-    attr_accessor :server_config_path
+  def self.server_config_path
+    @@server_config_path
+  end
+
+  def self.server_config_path=(value)
+    @@server_config_path = value
   end
 
   def self.save_if_dirty(path, commit: false)
@@ -112,7 +130,13 @@ class PuppetX::KeaDhcp::Provider::DdnsJson < Puppet::Provider
     stage_config(path) unless staged_paths.include?(path)
     temp = temp_configs[path]
 
-    Puppet::Util::Execution.execute(['kea-dhcp-ddns', '-t', temp.temp_path], failonfail: true)
+    # Run validation
+    result = Puppet::Util::Execution.execute(['kea-dhcp-ddns', '-t', temp.temp_path], failonfail: false, combine: true)
+
+    unless result.exitstatus.zero?
+      config_content = File.read(temp.temp_path)
+      raise Puppet::Error, "kea-dhcp-ddns validation failed with exit code #{result.exitstatus}\nValidation output:\n#{result}\n\nConfig content:\n#{config_content}"
+    end
 
     FileUtils.mkdir_p(File.dirname(path))
     FileUtils.mv(temp.temp_path, path, force: true)
@@ -147,11 +171,11 @@ class PuppetX::KeaDhcp::Provider::DdnsJson < Puppet::Provider
   end
 
   def self.temp_configs
-    @temp_configs ||= {}
+    @@temp_configs
   end
 
   def self.staged_paths
-    @staged_paths ||= Set.new
+    @@staged_paths
   end
 
   def self.stage_config(path)
