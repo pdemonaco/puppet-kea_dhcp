@@ -632,6 +632,8 @@ RSpec/SubjectDeclaration:
   Enabled: false
 RSpec/VerifiedDoubleReference:
   Enabled: false
+RSpec/VerifiedDoubles:
+  Enabled: false
 Security/CompoundHash:
   Enabled: false
 Security/IoMethods:
@@ -727,4 +729,8 @@ Style/SelectByRegexp:
 Style/StringChars:
   Enabled: false
 Style/SwapValues:
+  Enabled: false
+Style/ClassVars:
+  Enabled: false
+Style/NumericLiterals:
   Enabled: false

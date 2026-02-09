@@ -1,6 +1,6 @@
 {
   "name": "pdemon-kea_dhcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Phil DeMonaco",
   "summary": "Installs & configures the ISC Kea DHCP server",
   "license": "MIT",

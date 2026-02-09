@@ -48,7 +48,7 @@ Puppet::Type.newtype(:kea_dhcp_v4_reservation) do
 
   newproperty(:ip_address) do
     desc 'The reserved IPv4 address.'
-    IPV4 = %r{
+    IPV4_ADDR = %r{
       ^
       (25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.
       (25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.
@@ -59,7 +59,7 @@ Puppet::Type.newtype(:kea_dhcp_v4_reservation) do
 
     validate do |value|
       raise ArgumentError, 'IP address must be provided' if value.nil? || value.empty?
-      raise ArgumentError, "Invalid IPv4 address '#{value}'" unless value.match?(IPV4)
+      raise ArgumentError, "Invalid IPv4 address '#{value}'" unless value.match?(IPV4_ADDR)
     end
   end
 

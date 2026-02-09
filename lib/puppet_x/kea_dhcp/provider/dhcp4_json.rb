@@ -12,8 +12,8 @@ module PuppetX::KeaDhcp; end unless defined?(PuppetX::KeaDhcp)
 module PuppetX::KeaDhcp::Provider; end unless defined?(PuppetX::KeaDhcp::Provider)
 # rubocop:enable Style/Documentation
 
-# Provides shared helpers for Kea DHCP JSON-backed providers.
-class PuppetX::KeaDhcp::Provider::Json < Puppet::Provider
+# Provides shared helpers for Kea DHCPv4 JSON-backed providers.
+class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
   # Manages staged configuration written to a temporary location
   class TempConfig
     attr_reader :dir, :temp_path

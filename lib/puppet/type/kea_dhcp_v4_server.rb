@@ -149,6 +149,90 @@ Puppet::Type.newtype(:kea_dhcp_v4_server) do
     private :unwrap_sensitive
   end
 
+  newproperty(:dhcp_ddns) do
+    desc 'DHCP-DDNS connectivity and behavioral parameters.'
+
+    validate do |value|
+      unless value.is_a?(Hash)
+        raise ArgumentError, 'dhcp_ddns must be provided as a hash'
+      end
+
+      normalized = value.each_with_object({}) { |(k, v), acc| acc[k.to_s] = v }
+
+      if normalized.key?('enable-updates') && ![true, false].include?(normalized['enable-updates'])
+        raise ArgumentError, 'enable-updates must be a boolean'
+      end
+
+      if normalized.key?('server-port')
+        begin
+          port = Integer(normalized['server-port'])
+        rescue ArgumentError, TypeError
+          raise ArgumentError, 'server-port must be an integer'
+        end
+        raise ArgumentError, 'server-port must be between 1 and 65535' unless port.between?(1, 65_535)
+      end
+
+      if normalized.key?('sender-port')
+        begin
+          port = Integer(normalized['sender-port'])
+        rescue ArgumentError, TypeError
+          raise ArgumentError, 'sender-port must be an integer'
+        end
+        raise ArgumentError, 'sender-port must be between 0 and 65535' unless port.between?(0, 65_535)
+      end
+
+      if normalized.key?('max-queue-size')
+        begin
+          size = Integer(normalized['max-queue-size'])
+        rescue ArgumentError, TypeError
+          raise ArgumentError, 'max-queue-size must be an integer'
+        end
+        raise ArgumentError, 'max-queue-size must be positive' unless size.positive?
+      end
+
+      valid_protocols = ['UDP', 'TCP']
+      if normalized.key?('ncr-protocol') && !valid_protocols.include?(normalized['ncr-protocol'])
+        raise ArgumentError, "ncr-protocol must be one of: #{valid_protocols.join(', ')}"
+      end
+
+      valid_formats = ['JSON']
+      if normalized.key?('ncr-format') && !valid_formats.include?(normalized['ncr-format'])
+        raise ArgumentError, "ncr-format must be one of: #{valid_formats.join(', ')}"
+      end
+
+      valid_replace_modes = ['never', 'always', 'when-present', 'when-not-present']
+      if normalized.key?('ddns-replace-client-name') && !valid_replace_modes.include?(normalized['ddns-replace-client-name'])
+        raise ArgumentError, "ddns-replace-client-name must be one of: #{valid_replace_modes.join(', ')}"
+      end
+
+      valid_resolution_modes = ['check-with-dhcid', 'no-check-with-dhcid', 'check-exists-with-dhcid', 'no-check-without-dhcid']
+      if normalized.key?('ddns-conflict-resolution-mode') && !valid_resolution_modes.include?(normalized['ddns-conflict-resolution-mode'])
+        raise ArgumentError, "ddns-conflict-resolution-mode must be one of: #{valid_resolution_modes.join(', ')}"
+      end
+    end
+
+    def insync?(is)
+      stringify_keys(is || {}) == stringify_keys(should || {})
+    end
+
+    def munge(value)
+      normalized = stringify_keys(value)
+      normalized['server-port'] = Integer(normalized['server-port']) if normalized.key?('server-port')
+      normalized['sender-port'] = Integer(normalized['sender-port']) if normalized.key?('sender-port')
+      normalized['max-queue-size'] = Integer(normalized['max-queue-size']) if normalized.key?('max-queue-size')
+      normalized
+    end
+
+    def stringify_keys(hash)
+      return {} unless hash.respond_to?(:each)
+
+      hash.each_with_object({}) do |(key, val), acc|
+        acc[key.to_s] = val
+      end
+    end
+    private :stringify_keys
+  end
+
   autorequire(:file) do
     [self[:config_path]]
   end

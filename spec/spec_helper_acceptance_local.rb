@@ -94,3 +94,17 @@ def install_repository
   MANIFEST
   LitmusHelper.instance.apply_manifest(pp, expect_failures: false)
 end
+
+def reset_kea_configs
+  # Clean up Kea configuration files to ensure clean test state
+  # This prevents test data accumulation between runs
+  cleanup_command = <<~BASH
+    rm -f /etc/kea/kea-dhcp4.conf
+    rm -f /etc/kea/kea-dhcp-ddns.conf
+    rm -f /etc/kea/kea-dhcp6.conf
+    systemctl stop kea-dhcp4 kea-dhcp-ddns kea-dhcp6 2>/dev/null || true
+  BASH
+
+  # Use litmus helper to run cleanup on all targets
+  LitmusHelper.instance.run_shell(cleanup_command, expect_failures: true)
+end

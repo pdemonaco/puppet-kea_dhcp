@@ -70,6 +70,64 @@ describe 'kea_dhcp' do
         expect(lease_database['password'].unwrap).to eq('kea_password')
       end
 
+      context 'with DDNS enabled' do
+        it 'manages the DDNS server configuration' do
+          is_expected.to contain_kea_ddns_server('dhcp-ddns').with(
+            'ensure' => 'present',
+            'ip_address' => '127.0.0.1',
+            'port' => 53_001,
+            'dns_server_timeout' => 500,
+            'ncr_protocol' => 'UDP',
+            'ncr_format' => 'JSON',
+            'tsig_keys' => [],
+          )
+        end
+      end
+
+      context 'with DDNS disabled' do
+        let(:params) do
+          super().merge(enable_ddns: false)
+        end
+
+        it 'does not manage the DDNS server configuration' do
+          is_expected.not_to contain_kea_ddns_server('dhcp-ddns')
+        end
+      end
+
+      context 'with custom DDNS parameters' do
+        let(:params) do
+          super().merge(
+            ddns_ip_address: '192.168.1.10',
+            ddns_port: 8053,
+            ddns_server_timeout: 1000,
+            ddns_ncr_protocol: 'TCP',
+            ddns_tsig_keys: [
+              {
+                'name' => 'test-key',
+                'algorithm' => 'HMAC-SHA256',
+                'secret' => 'abc123==',
+              },
+            ],
+          )
+        end
+
+        it 'manages DDNS server with custom parameters' do
+          is_expected.to contain_kea_ddns_server('dhcp-ddns').with(
+            'ip_address' => '192.168.1.10',
+            'port' => 8053,
+            'dns_server_timeout' => 1000,
+            'ncr_protocol' => 'TCP',
+            'tsig_keys' => [
+              {
+                'name' => 'test-key',
+                'algorithm' => 'HMAC-SHA256',
+                'secret' => 'abc123==',
+              },
+            ],
+          )
+        end
+      end
+
       context 'with PostgreSQL setup' do
         it 'configures the server instance' do
           is_expected.to contain_postgresql__server_instance('kea').with(

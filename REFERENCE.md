@@ -15,6 +15,8 @@
 
 ### Resource types
 
+* [`kea_ddns_domain`](#kea_ddns_domain): Manages Kea DHCP-DDNS domain configurations (forward or reverse).
+* [`kea_ddns_server`](#kea_ddns_server): Manages Kea DHCP-DDNS server level configuration.
 * [`kea_dhcp_v4_reservation`](#kea_dhcp_v4_reservation): Manages DHCPv4 host reservations within a subnet in the Kea kea-dhcp4.json configuration file.
 * [`kea_dhcp_v4_scope`](#kea_dhcp_v4_scope): Manages DHCPv4 subnets within the Kea kea-dhcp4.json configuration file.
 * [`kea_dhcp_v4_server`](#kea_dhcp_v4_server): Manages Kea DHCPv4 server level configuration.
@@ -40,6 +42,13 @@ The following parameters are available in the `kea_dhcp` class:
 * [`enable_ctrl_agent`](#-kea_dhcp--enable_ctrl_agent)
 * [`backend`](#-kea_dhcp--backend)
 * [`array_dhcp4_server_options`](#-kea_dhcp--array_dhcp4_server_options)
+* [`dhcp_ddns`](#-kea_dhcp--dhcp_ddns)
+* [`ddns_ip_address`](#-kea_dhcp--ddns_ip_address)
+* [`ddns_port`](#-kea_dhcp--ddns_port)
+* [`ddns_server_timeout`](#-kea_dhcp--ddns_server_timeout)
+* [`ddns_ncr_protocol`](#-kea_dhcp--ddns_ncr_protocol)
+* [`ddns_ncr_format`](#-kea_dhcp--ddns_ncr_format)
+* [`ddns_tsig_keys`](#-kea_dhcp--ddns_tsig_keys)
 * [`lease_database_name`](#-kea_dhcp--lease_database_name)
 * [`lease_database_user`](#-kea_dhcp--lease_database_user)
 * [`lease_database_host`](#-kea_dhcp--lease_database_host)
@@ -105,6 +114,63 @@ These options are treateds as the default options for all subnets managed by the
 
 Default value: `[]`
 
+##### <a name="-kea_dhcp--dhcp_ddns"></a>`dhcp_ddns`
+
+Data type: `Optional[Hash]`
+
+Hash of DHCP-DDNS configuration settings to include in the DHCPv4 server configuration.
+These settings control how the DHCPv4 server communicates with the DDNS server.
+
+Default value: `undef`
+
+##### <a name="-kea_dhcp--ddns_ip_address"></a>`ddns_ip_address`
+
+Data type: `String`
+
+IP address on which the DDNS server listens for requests.
+
+Default value: `'127.0.0.1'`
+
+##### <a name="-kea_dhcp--ddns_port"></a>`ddns_port`
+
+Data type: `Stdlib::Port`
+
+Port on which the DDNS server listens for requests.
+
+Default value: `53001`
+
+##### <a name="-kea_dhcp--ddns_server_timeout"></a>`ddns_server_timeout`
+
+Data type: `Integer[1]`
+
+Maximum time to wait for DNS server response in milliseconds.
+
+Default value: `500`
+
+##### <a name="-kea_dhcp--ddns_ncr_protocol"></a>`ddns_ncr_protocol`
+
+Data type: `Enum['UDP', 'TCP']`
+
+Protocol for DDNS server communication (UDP or TCP).
+
+Default value: `'UDP'`
+
+##### <a name="-kea_dhcp--ddns_ncr_format"></a>`ddns_ncr_format`
+
+Data type: `Enum['JSON']`
+
+Format for DDNS server communication (JSON).
+
+Default value: `'JSON'`
+
+##### <a name="-kea_dhcp--ddns_tsig_keys"></a>`ddns_tsig_keys`
+
+Data type: `Array[Hash]`
+
+Array of TSIG key configurations for DNS update authentication.
+
+Default value: `[]`
+
 ##### <a name="-kea_dhcp--lease_database_name"></a>`lease_database_name`
 
 Data type: `String`
@@ -152,6 +218,14 @@ The following parameters are available in the `kea_dhcp::config` class:
 * [`lease_database_port`](#-kea_dhcp--config--lease_database_port)
 * [`server_options`](#-kea_dhcp--config--server_options)
 * [`sensitive_db_password`](#-kea_dhcp--config--sensitive_db_password)
+* [`dhcp_ddns`](#-kea_dhcp--config--dhcp_ddns)
+* [`enable_ddns`](#-kea_dhcp--config--enable_ddns)
+* [`ddns_ip_address`](#-kea_dhcp--config--ddns_ip_address)
+* [`ddns_port`](#-kea_dhcp--config--ddns_port)
+* [`ddns_server_timeout`](#-kea_dhcp--config--ddns_server_timeout)
+* [`ddns_ncr_protocol`](#-kea_dhcp--config--ddns_ncr_protocol)
+* [`ddns_ncr_format`](#-kea_dhcp--config--ddns_ncr_format)
+* [`ddns_tsig_keys`](#-kea_dhcp--config--ddns_tsig_keys)
 * [`backend`](#-kea_dhcp--config--backend)
 
 ##### <a name="-kea_dhcp--config--config_path"></a>`config_path`
@@ -209,6 +283,70 @@ Data type: `Sensitive[String]`
 Sensitive value containing the password for the lease database user.
 
 Default value: `$kea_dhcp::sensitive_db_password`
+
+##### <a name="-kea_dhcp--config--dhcp_ddns"></a>`dhcp_ddns`
+
+Data type: `Optional[Hash]`
+
+Hash of DHCP-DDNS configuration settings to include in the DHCPv4 server configuration.
+
+Default value: `$kea_dhcp::dhcp_ddns`
+
+##### <a name="-kea_dhcp--config--enable_ddns"></a>`enable_ddns`
+
+Data type: `Boolean`
+
+Whether to configure the DDNS server.
+
+Default value: `$kea_dhcp::enable_ddns`
+
+##### <a name="-kea_dhcp--config--ddns_ip_address"></a>`ddns_ip_address`
+
+Data type: `String`
+
+IP address on which the DDNS server listens.
+
+Default value: `$kea_dhcp::ddns_ip_address`
+
+##### <a name="-kea_dhcp--config--ddns_port"></a>`ddns_port`
+
+Data type: `Stdlib::Port`
+
+Port on which the DDNS server listens.
+
+Default value: `$kea_dhcp::ddns_port`
+
+##### <a name="-kea_dhcp--config--ddns_server_timeout"></a>`ddns_server_timeout`
+
+Data type: `Integer[1]`
+
+DNS server timeout in milliseconds.
+
+Default value: `$kea_dhcp::ddns_server_timeout`
+
+##### <a name="-kea_dhcp--config--ddns_ncr_protocol"></a>`ddns_ncr_protocol`
+
+Data type: `Enum['UDP', 'TCP']`
+
+DDNS communication protocol.
+
+Default value: `$kea_dhcp::ddns_ncr_protocol`
+
+##### <a name="-kea_dhcp--config--ddns_ncr_format"></a>`ddns_ncr_format`
+
+Data type: `Enum['JSON']`
+
+DDNS communication format.
+
+Default value: `$kea_dhcp::ddns_ncr_format`
+
+##### <a name="-kea_dhcp--config--ddns_tsig_keys"></a>`ddns_tsig_keys`
+
+Data type: `Array[Hash]`
+
+TSIG keys for DNS authentication.
+
+Default value: `$kea_dhcp::ddns_tsig_keys`
 
 ##### <a name="-kea_dhcp--config--backend"></a>`backend`
 
@@ -376,6 +514,142 @@ The name of the kea-dhcp-ddns service for this OS.
 
 ## Resource types
 
+### <a name="kea_ddns_domain"></a>`kea_ddns_domain`
+
+Manages Kea DHCP-DDNS domain configurations (forward or reverse).
+
+#### Properties
+
+The following properties are available in the `kea_ddns_domain` type.
+
+##### `direction`
+
+The direction of this domain: "forward" or "reverse".
+
+##### `dns_servers`
+
+Array of DNS server configurations (ip-address, port, optional key-name).
+
+Default value: `[]`
+
+##### `domain_name`
+
+The DNS domain name (e.g., "example.com." or "1.168.192.in-addr.arpa.").
+
+##### `ensure`
+
+Valid values: `present`, `absent`
+
+The basic property that the resource should be in.
+
+Default value: `present`
+
+##### `key_name`
+
+Optional TSIG key name to use for all DNS servers in this domain (unless overridden per-server).
+
+#### Parameters
+
+The following parameters are available in the `kea_ddns_domain` type.
+
+* [`config_path`](#-kea_ddns_domain--config_path)
+* [`name`](#-kea_ddns_domain--name)
+* [`provider`](#-kea_ddns_domain--provider)
+
+##### <a name="-kea_ddns_domain--config_path"></a>`config_path`
+
+Path to the kea-dhcp-ddns configuration file.
+
+Default value: `/etc/kea/kea-dhcp-ddns.conf`
+
+##### <a name="-kea_ddns_domain--name"></a>`name`
+
+namevar
+
+The Puppet identifier for this DDNS domain.
+
+##### <a name="-kea_ddns_domain--provider"></a>`provider`
+
+The specific backend to use for this `kea_ddns_domain` resource. You will seldom need to specify this --- Puppet will
+usually discover the appropriate provider for your platform.
+
+### <a name="kea_ddns_server"></a>`kea_ddns_server`
+
+Manages Kea DHCP-DDNS server level configuration.
+
+#### Properties
+
+The following properties are available in the `kea_ddns_server` type.
+
+##### `dns_server_timeout`
+
+Maximum amount of time to wait for a response from a DNS server, in milliseconds.
+
+Default value: `500`
+
+##### `ensure`
+
+Valid values: `present`, `absent`
+
+The basic property that the resource should be in.
+
+Default value: `present`
+
+##### `ip_address`
+
+IP address on which D2 listens for requests.
+
+Default value: `127.0.0.1`
+
+##### `ncr_format`
+
+Packet format to use when sending requests to D2.
+
+Default value: `JSON`
+
+##### `ncr_protocol`
+
+Socket protocol to use when sending requests to D2.
+
+Default value: `UDP`
+
+##### `port`
+
+Port on which D2 listens for requests.
+
+Default value: `53_001`
+
+##### `tsig_keys`
+
+Array of TSIG key configurations for authenticating DNS updates.
+
+Default value: `[]`
+
+#### Parameters
+
+The following parameters are available in the `kea_ddns_server` type.
+
+* [`config_path`](#-kea_ddns_server--config_path)
+* [`name`](#-kea_ddns_server--name)
+* [`provider`](#-kea_ddns_server--provider)
+
+##### <a name="-kea_ddns_server--config_path"></a>`config_path`
+
+Path to the kea-dhcp-ddns configuration file.
+
+Default value: `/etc/kea/kea-dhcp-ddns.conf`
+
+##### <a name="-kea_ddns_server--name"></a>`name`
+
+namevar
+
+The unique identifier for the DHCP-DDNS server configuration. Must be dhcp-ddns.
+
+##### <a name="-kea_ddns_server--provider"></a>`provider`
+
+The specific backend to use for this `kea_ddns_server` resource. You will seldom need to specify this --- Puppet will
+usually discover the appropriate provider for your platform.
+
 ### <a name="kea_dhcp_v4_reservation"></a>`kea_dhcp_v4_reservation`
 
 Manages DHCPv4 host reservations within a subnet in the Kea kea-dhcp4.json configuration file.
@@ -509,6 +783,10 @@ Manages Kea DHCPv4 server level configuration.
 #### Properties
 
 The following properties are available in the `kea_dhcp_v4_server` type.
+
+##### `dhcp_ddns`
+
+DHCP-DDNS connectivity and behavioral parameters.
 
 ##### `ensure`
 

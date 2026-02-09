@@ -6,6 +6,8 @@ describe 'kea_dhcp_v4_reservation provider' do
   let(:config_path) { '/etc/kea/kea-dhcp4.conf' }
 
   before :all do
+    reset_kea_configs
+    install_repository
     base_manifest = <<~PP
       class { 'kea_dhcp':
         sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
