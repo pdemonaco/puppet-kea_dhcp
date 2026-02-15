@@ -63,8 +63,10 @@ Puppet::Type.newtype(:kea_dhcp_v4_reservation) do
     end
   end
 
-  newproperty(:hostname) do
-    desc 'Optional hostname for the reservation.'
+  newproperty(:hostname, namevar: true) do
+    desc 'Hostname for the reservation. Defaults to the resource title if not specified.'
+
+    defaultto { @resource[:name] }
   end
 
   autorequire(:file) do

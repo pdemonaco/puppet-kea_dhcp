@@ -404,6 +404,77 @@ describe provider_class do
     end
   end
 
+  context 'hostname as namevar' do
+    it 'uses resource title as hostname when hostname not specified' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'subnet4' => [
+            { 'id' => 1, 'subnet' => '192.0.2.0/24' },
+          ],
+        },
+      )
+
+      resource = type_class.new(
+        name: 'printer1',
+        identifier_type: 'client-id',
+        identifier: '01:aa:bb:cc:dd:ee:ff',
+        ip_address: '192.0.2.20',
+        config_path: config_path,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_uncontrolled!
+
+      config = JSON.parse(File.read(config_path))
+      reservation = config['Dhcp4']['subnet4'].first['reservations'].first
+
+      expect(reservation['client-id']).to eq('01:aa:bb:cc:dd:ee:ff')
+      expect(reservation['ip-address']).to eq('192.0.2.20')
+      expect(reservation['hostname']).to eq('printer1')
+    end
+
+    it 'uses explicit hostname when provided, overriding resource title' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'subnet4' => [
+            { 'id' => 1, 'subnet' => '192.0.2.0/24' },
+          ],
+        },
+      )
+
+      resource = type_class.new(
+        name: 'printer-host-definitions',
+        identifier_type: 'client-id',
+        identifier: '01:aa:bb:cc:dd:ee:ff',
+        ip_address: '192.0.2.20',
+        hostname: 'printer2',
+        config_path: config_path,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_uncontrolled!
+
+      config = JSON.parse(File.read(config_path))
+      reservation = config['Dhcp4']['subnet4'].first['reservations'].first
+
+      expect(reservation['client-id']).to eq('01:aa:bb:cc:dd:ee:ff')
+      expect(reservation['ip-address']).to eq('192.0.2.20')
+      expect(reservation['hostname']).to eq('printer2')
+    end
+  end
+
   context 'when the subnet does not exist' do
     it 'raises an error with explicit scope_id' do
       write_config(
