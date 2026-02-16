@@ -16,7 +16,7 @@ describe Puppet::Type.type(:kea_ddns_domain) do
     expect(resource[:dns_servers]).to eq([{ 'ip-address' => '192.168.1.10', 'port' => 53 }])
   end
 
-  describe 'domain_name property' do
+  describe 'domain_name parameter' do
     it 'accepts valid domain names' do
       resource = described_class.new(name: 'test', domain_name: 'example.com.', direction: 'forward')
       expect(resource[:domain_name]).to eq('example.com.')
@@ -35,6 +35,31 @@ describe Puppet::Type.type(:kea_ddns_domain) do
       expect {
         described_class.new(name: 'test', domain_name: '', direction: 'forward')
       }.to raise_error(Puppet::ResourceError, %r{cannot be empty})
+    end
+
+    it 'defaults to the resource title when not specified' do
+      resource = described_class.new(name: 'example.com.', direction: 'forward')
+      expect(resource[:domain_name]).to eq('example.com.')
+    end
+
+    it 'allows explicit domain_name different from title' do
+      resource = described_class.new(
+        name: 'forward-zone',
+        domain_name: 'example.com.',
+        direction: 'forward',
+      )
+      expect(resource[:name]).to eq('forward-zone')
+      expect(resource[:domain_name]).to eq('example.com.')
+    end
+
+    it 'supports using domain name as title' do
+      resource = described_class.new(
+        name: '2.0.192.in-addr.arpa.',
+        direction: 'reverse',
+        dns_servers: [{ 'ip-address' => '192.0.2.53' }],
+      )
+      expect(resource[:name]).to eq('2.0.192.in-addr.arpa.')
+      expect(resource[:domain_name]).to eq('2.0.192.in-addr.arpa.')
     end
   end
 

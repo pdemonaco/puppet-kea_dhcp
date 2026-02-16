@@ -85,14 +85,6 @@ Puppet::Type.type(:kea_ddns_domain).provide(:json, parent: PuppetX::KeaDhcp::Pro
     }
   end
 
-  def domain_name
-    @property_hash[:domain_name]
-  end
-
-  def domain_name=(value)
-    @property_flush[:domain_name] = value
-  end
-
   def direction
     @property_hash[:direction]
   end
@@ -119,7 +111,6 @@ Puppet::Type.type(:kea_ddns_domain).provide(:json, parent: PuppetX::KeaDhcp::Pro
 
   def create
     @property_flush[:ensure] = :present
-    @property_flush[:domain_name] = resource[:domain_name]
     @property_flush[:direction] = resource[:direction]
     @property_flush[:key_name] = resource[:key_name]
     @property_flush[:dns_servers] = resource[:dns_servers] || []
@@ -213,6 +204,8 @@ Puppet::Type.type(:kea_ddns_domain).provide(:json, parent: PuppetX::KeaDhcp::Pro
 
     if key == :dns_servers && value.nil?
       []
+    elsif key == :domain_name && value.nil?
+      resource[:domain_name]
     else
       value
     end
