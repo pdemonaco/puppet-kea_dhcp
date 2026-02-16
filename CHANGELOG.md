@@ -2,11 +2,19 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [0.4.0](https://github.com/pdemonaco/puppet-kea_dhcp/tree/0.4.0) (2026-02-16)
+
+[Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.3.0...0.4.0)
+
+### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
+
+- type checking enhancements [\#13](https://github.com/pdemonaco/puppet-kea_dhcp/pull/13) ([pdemonaco](https://github.com/pdemonaco))
+
 ## [0.3.0](https://github.com/pdemonaco/puppet-kea_dhcp/tree/0.3.0) (2026-02-09)
 
 [Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.2.0...0.3.0)
 
-### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
+### Added
 
 - feat\(ddns\): add dynamic DNS support for Kea DHCP [\#9](https://github.com/pdemonaco/puppet-kea_dhcp/pull/9) ([pdemonaco](https://github.com/pdemonaco))
 
@@ -22,13 +30,19 @@ All notable changes to this project will be documented in this file. The format 
 
 [Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/03f033a01e7fc4193099587d3ffbcab283391308...0.1.0)
 
+### Added
+
+- Add Claude Code GitHub Workflow [\#2](https://github.com/pdemonaco/puppet-kea_dhcp/pull/2) ([pdemonaco](https://github.com/pdemonaco))
+- One step closer to release [\#1](https://github.com/pdemonaco/puppet-kea_dhcp/pull/1) ([pdemonaco](https://github.com/pdemonaco))
+
+### Fixed
+
+- chore: missing changelog generator [\#4](https://github.com/pdemonaco/puppet-kea_dhcp/pull/4) ([pdemonaco](https://github.com/pdemonaco))
+- chore: suppress claude on my PRs [\#3](https://github.com/pdemonaco/puppet-kea_dhcp/pull/3) ([pdemonaco](https://github.com/pdemonaco))
+
 ### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
 
 - Sync fixes [\#5](https://github.com/pdemonaco/puppet-kea_dhcp/pull/5) ([pdemonaco](https://github.com/pdemonaco))
-- chore: missing changelog generator [\#4](https://github.com/pdemonaco/puppet-kea_dhcp/pull/4) ([pdemonaco](https://github.com/pdemonaco))
-- chore: suppress claude on my PRs [\#3](https://github.com/pdemonaco/puppet-kea_dhcp/pull/3) ([pdemonaco](https://github.com/pdemonaco))
-- Add Claude Code GitHub Workflow [\#2](https://github.com/pdemonaco/puppet-kea_dhcp/pull/2) ([pdemonaco](https://github.com/pdemonaco))
-- One step closer to release [\#1](https://github.com/pdemonaco/puppet-kea_dhcp/pull/1) ([pdemonaco](https://github.com/pdemonaco))
 
 
 
