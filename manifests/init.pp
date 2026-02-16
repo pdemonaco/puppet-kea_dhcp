@@ -69,7 +69,7 @@ class kea_dhcp (
   Boolean $enable_dhcp6 = false,
   Boolean $enable_ddns = true,
   Boolean $enable_ctrl_agent = true,
-  String $ddns_ip_address = '127.0.0.1',
+  Stdlib::IP::Address::V4 $ddns_ip_address = '127.0.0.1',
   Stdlib::Port $ddns_port = 53001,
   Integer[1] $ddns_server_timeout = 500,
   Enum['UDP', 'TCP'] $ddns_ncr_protocol = 'UDP',
@@ -77,7 +77,7 @@ class kea_dhcp (
   Array[Hash] $ddns_tsig_keys = [],
   String $lease_database_name = 'kea',
   String $lease_database_user = 'kea',
-  String $lease_database_host = '127.0.0.1',
+  Stdlib::Host $lease_database_host = '127.0.0.1',
   Stdlib::Port $lease_database_port = 5433,
   Kea_Dhcp::Backends $backend = 'postgresql',
 ) {

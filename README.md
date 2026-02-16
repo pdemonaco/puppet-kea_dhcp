@@ -91,20 +91,21 @@ Multiple scopes are aggregated into a single configuration file. The provider pr
 
 ### Host Reservations
 
-Reserve specific IP addresses for known hosts using `kea_dhcp_v4_reservation`. The subnet is automatically detected from the IP address:
+Reserve specific IP addresses for known hosts using `kea_dhcp_v4_reservation`. The subnet is automatically detected from the IP address.
+
+The `hostname` parameter is a namevar, which means the resource title becomes the hostname unless you explicitly specify a different hostname. This makes common cases more concise:
 
 ```puppet
-# Reserve using MAC address
-kea_dhcp_v4_reservation { 'file-server':
+# Resource title becomes the hostname (recommended)
+kea_dhcp_v4_reservation { 'fileserver':
   ensure          => present,
   identifier_type => 'hw-address',
   identifier      => '00:11:22:33:44:55',
   ip_address      => '192.0.2.10',
-  hostname        => 'fileserver',
 }
 
-# Reserve using client-id
-kea_dhcp_v4_reservation { 'printer':
+# Use explicit hostname to override the title
+kea_dhcp_v4_reservation { 'printer-definitions':
   ensure          => present,
   identifier_type => 'client-id',
   identifier      => '01:aa:bb:cc:dd:ee:ff',
@@ -112,7 +113,7 @@ kea_dhcp_v4_reservation { 'printer':
   hostname        => 'printer-1',
 }
 
-# Reservation without hostname
+# Without hostname parameter, title is used
 kea_dhcp_v4_reservation { 'laptop':
   ensure          => present,
   identifier_type => 'hw-address',

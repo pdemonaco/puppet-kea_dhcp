@@ -23,6 +23,10 @@
 
 ### Data types
 
+* [`Kea_Dhcp::DdnsDomain`](#Kea_Dhcp--DdnsDomain): Utility type for declaring DDNS domains
+* [`Kea_Dhcp::MacAddress`](#Kea_Dhcp--MacAddress): MAC address format for Kea DHCP identifiers
+* [`Kea_Dhcp::V4Reservation`](#Kea_Dhcp--V4Reservation): Utility type for declaring multiple reservations
+* [`Kea_Dhcp::V4Scope`](#Kea_Dhcp--V4Scope): Utility type for declaring multiple scopes
 * [`Kea_dhcp::Backends`](#Kea_dhcp--Backends): Defines the valid backend types for Kea DHCP
 
 ## Classes
@@ -125,7 +129,7 @@ Default value: `undef`
 
 ##### <a name="-kea_dhcp--ddns_ip_address"></a>`ddns_ip_address`
 
-Data type: `String`
+Data type: `Stdlib::IP::Address::V4`
 
 IP address on which the DDNS server listens for requests.
 
@@ -189,7 +193,7 @@ Default value: `'kea'`
 
 ##### <a name="-kea_dhcp--lease_database_host"></a>`lease_database_host`
 
-Data type: `String`
+Data type: `Stdlib::Host`
 
 Hostname or IP address of the PostgreSQL server if that backend is selected.
 
@@ -254,7 +258,7 @@ Default value: `$kea_dhcp::lease_database_user`
 
 ##### <a name="-kea_dhcp--config--lease_database_host"></a>`lease_database_host`
 
-Data type: `String`
+Data type: `Stdlib::Host`
 
 Hostname or IP address of the PostgreSQL server.
 
@@ -302,7 +306,7 @@ Default value: `$kea_dhcp::enable_ddns`
 
 ##### <a name="-kea_dhcp--config--ddns_ip_address"></a>`ddns_ip_address`
 
-Data type: `String`
+Data type: `Stdlib::IP::Address::V4`
 
 IP address on which the DDNS server listens.
 
@@ -668,7 +672,7 @@ Default value: `present`
 
 ##### `hostname`
 
-Optional hostname for the reservation.
+Hostname for the reservation. Defaults to the resource title if not specified.
 
 ##### `identifier`
 
@@ -838,6 +842,161 @@ The specific backend to use for this `kea_dhcp_v4_server` resource. You will sel
 usually discover the appropriate provider for your platform.
 
 ## Data types
+
+### <a name="Kea_Dhcp--DdnsDomain"></a>`Kea_Dhcp::DdnsDomain`
+
+Utility type for declaring DDNS domains
+
+Alias of
+
+```puppet
+Struct[name                   => String,
+  domain_name            => String[1],
+  direction              => Enum['forward', 'reverse'],
+  Optional[key_name]     => String,
+  Optional[dns_servers]  => Array[Struct[{
+        'ip-address'           => Stdlib::IP::Address,
+        Optional['port']       => Integer[1, 65535],
+        Optional['key-name']   => String,
+  }]]]
+```
+
+#### Parameters
+
+The following parameters are available in the `Kea_Dhcp::DdnsDomain` data type:
+
+* [`name`](#-Kea_Dhcp--DdnsDomain--name)
+* [`domain_name`](#-Kea_Dhcp--DdnsDomain--domain_name)
+* [`direction`](#-Kea_Dhcp--DdnsDomain--direction)
+* [`key_name`](#-Kea_Dhcp--DdnsDomain--key_name)
+* [`dns_servers`](#-Kea_Dhcp--DdnsDomain--dns_servers)
+
+##### <a name="-Kea_Dhcp--DdnsDomain--name"></a>`name`
+
+Unique Puppet identifier for this DDNS domain
+
+##### <a name="-Kea_Dhcp--DdnsDomain--domain_name"></a>`domain_name`
+
+The DNS domain name (e.g., 'example.com.' or '1.168.192.in-addr.arpa.')
+
+##### <a name="-Kea_Dhcp--DdnsDomain--direction"></a>`direction`
+
+The direction of this domain: 'forward' for forward DNS or 'reverse' for reverse DNS
+
+##### <a name="-Kea_Dhcp--DdnsDomain--key_name"></a>`key_name`
+
+Optional TSIG key name to use for all DNS servers in this domain (unless overridden per-server)
+
+##### <a name="-Kea_Dhcp--DdnsDomain--dns_servers"></a>`dns_servers`
+
+Optional array of DNS server configurations. Each server is a hash containing:
+  - 'ip-address' (required): IPv4 or IPv6 address of the DNS server
+  - 'port' (optional): Port number (1-65535, defaults to 53)
+  - 'key-name' (optional): TSIG key name for this specific server
+
+### <a name="Kea_Dhcp--MacAddress"></a>`Kea_Dhcp::MacAddress`
+
+Supports 6-octet (XX:XX:XX:XX:XX:XX) or 7-octet (XX:XX:XX:XX:XX:XX:XX) formats
+with either colon or hyphen separators (but not mixed).
+
+Alias of `Pattern[/\A([0-9a-fA-F]{2}[:-])([0-9a-fA-F]{2}[:-])([0-9a-fA-F]{2}[:-])([0-9a-fA-F]{2}[:-])([0-9a-fA-F]{2}[:-])([0-9a-fA-F]{2})([:-][0-9a-fA-F]{2})?\z/]`
+
+### <a name="Kea_Dhcp--V4Reservation"></a>`Kea_Dhcp::V4Reservation`
+
+Utility type for declaring multiple reservations
+
+Alias of
+
+```puppet
+Struct[name                  => String,
+  identifier            => Kea_Dhcp::MacAddress,
+  identifier_type       => Enum['hw-address', 'client-id'],
+  ip_address            => Stdlib::IP::Address::V4,
+  Optional[hostname]    => String,
+  Optional[scope_id]    => Variant[Integer[0], Enum['auto']]]
+```
+
+#### Parameters
+
+The following parameters are available in the `Kea_Dhcp::V4Reservation` data type:
+
+* [`name`](#-Kea_Dhcp--V4Reservation--name)
+* [`identifier`](#-Kea_Dhcp--V4Reservation--identifier)
+* [`identifier_type`](#-Kea_Dhcp--V4Reservation--identifier_type)
+* [`ip_address`](#-Kea_Dhcp--V4Reservation--ip_address)
+* [`hostname`](#-Kea_Dhcp--V4Reservation--hostname)
+* [`scope_id`](#-Kea_Dhcp--V4Reservation--scope_id)
+
+##### <a name="-Kea_Dhcp--V4Reservation--name"></a>`name`
+
+Unique identifier for the reservation used only by Puppet
+
+##### <a name="-Kea_Dhcp--V4Reservation--identifier"></a>`identifier`
+
+The MAC address for the client (6-octet or 7-octet format)
+
+##### <a name="-Kea_Dhcp--V4Reservation--identifier_type"></a>`identifier_type`
+
+Type of identifier: 'hw-address' for hardware address or 'client-id' for client identifier
+
+##### <a name="-Kea_Dhcp--V4Reservation--ip_address"></a>`ip_address`
+
+The reserved IPv4 address to assign to this client
+
+##### <a name="-Kea_Dhcp--V4Reservation--hostname"></a>`hostname`
+
+Optional hostname for the reservation. Defaults to the name if not specified
+
+##### <a name="-Kea_Dhcp--V4Reservation--scope_id"></a>`scope_id`
+
+Optional numeric identifier for the subnet where this reservation belongs.
+Set to 'auto' to auto-detect from ip_address. Defaults to auto-detection if not specified
+
+### <a name="Kea_Dhcp--V4Scope"></a>`Kea_Dhcp::V4Scope`
+
+Utility type for declaring multiple scopes
+
+Alias of
+
+```puppet
+Struct[name              => String,
+  subnet            => Stdlib::IP::Address::V4::CIDR,
+  Optional[id]      => Variant[Integer[0], Enum['auto']],
+  Optional[options] => Array[Hash],
+  Optional[pools]   => Array[String]]
+```
+
+#### Parameters
+
+The following parameters are available in the `Kea_Dhcp::V4Scope` data type:
+
+* [`name`](#-Kea_Dhcp--V4Scope--name)
+* [`subnet`](#-Kea_Dhcp--V4Scope--subnet)
+* [`id`](#-Kea_Dhcp--V4Scope--id)
+* [`options`](#-Kea_Dhcp--V4Scope--options)
+* [`pools`](#-Kea_Dhcp--V4Scope--pools)
+
+##### <a name="-Kea_Dhcp--V4Scope--name"></a>`name`
+
+Unique identifier for the scope used only by Puppet
+
+##### <a name="-Kea_Dhcp--V4Scope--subnet"></a>`subnet`
+
+CIDR representation of the subnet (e.g., '192.168.1.0/24')
+
+##### <a name="-Kea_Dhcp--V4Scope--id"></a>`id`
+
+Optional numeric identifier for the scope. Set to 'auto' to use the next free identifier.
+Defaults to 'auto' if not specified
+
+##### <a name="-Kea_Dhcp--V4Scope--options"></a>`options`
+
+Optional array of DHCP option hashes. Each hash must contain 'name' and 'data' keys
+
+##### <a name="-Kea_Dhcp--V4Scope--pools"></a>`pools`
+
+Optional array of pool definitions. Each entry can be a CIDR (e.g., '10.0.0.0/28')
+or an IPv4 range (e.g., '10.0.0.1 - 10.0.0.254')
 
 ### <a name="Kea_dhcp--Backends"></a>`Kea_dhcp::Backends`
 

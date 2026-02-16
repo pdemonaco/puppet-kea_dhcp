@@ -40,9 +40,30 @@ Puppet::Type.newtype(:kea_dhcp_v4_reservation) do
 
   newproperty(:identifier) do
     desc 'The MAC address (hw-address) or client identifier value.'
+    MAC_ADDR = %r{
+      ^
+      ([0-9a-fA-F]{2}[:-])
+      ([0-9a-fA-F]{2}[:-])
+      ([0-9a-fA-F]{2}[:-])
+      ([0-9a-fA-F]{2}[:-])
+      ([0-9a-fA-F]{2}[:-])
+      ([0-9a-fA-F]{2})
+      ([:-][0-9a-fA-F]{2})?
+      $
+    }x.freeze
 
     validate do |value|
       raise ArgumentError, 'Identifier must be provided' if value.nil? || value.empty?
+
+      # Check basic MAC format
+      unless value.match?(MAC_ADDR)
+        raise ArgumentError, "Invalid MAC address format '#{value}'. Expected format: XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX"
+      end
+
+      # Ensure consistent separator usage (all : or all -)
+      if value.include?(':') && value.include?('-')
+        raise ArgumentError, "Invalid MAC address format '#{value}'. Mixed separators not allowed"
+      end
     end
   end
 
@@ -63,8 +84,10 @@ Puppet::Type.newtype(:kea_dhcp_v4_reservation) do
     end
   end
 
-  newproperty(:hostname) do
-    desc 'Optional hostname for the reservation.'
+  newproperty(:hostname, namevar: true) do
+    desc 'Hostname for the reservation. Defaults to the resource title if not specified.'
+
+    defaultto { @resource[:name] }
   end
 
   autorequire(:file) do
