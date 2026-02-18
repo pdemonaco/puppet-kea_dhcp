@@ -3,6 +3,9 @@
 # @param config_path
 #   Path to the main kea-dhcp4 configuration file.
 #
+# @param config_path_v6
+#   Path to the main kea-dhcp6 configuration file.
+#
 # @param lease_database_name
 #   Name of the PostgreSQL database to use for leases.
 #
@@ -18,11 +21,17 @@
 # @param server_options
 #   Array of additional options to include in the DHCPv4 server configuration.
 #
+# @param server_options_v6
+#   Array of additional options to include in the DHCPv6 server configuration.
+#
 # @param sensitive_db_password
 #   Sensitive value containing the password for the lease database user.
 #
 # @param dhcp_ddns
 #   Hash of DHCP-DDNS configuration settings to include in the DHCPv4 server configuration.
+#
+# @param enable_dhcp6
+#   Whether to configure the DHCPv6 server.
 #
 # @param enable_ddns
 #   Whether to configure the DDNS server.
@@ -49,13 +58,16 @@
 #   The backend type used for storing leases. Used to determine which hooks libraries to load.
 class kea_dhcp::config (
   Stdlib::Absolutepath $config_path = '/etc/kea/kea-dhcp4.conf',
+  Stdlib::Absolutepath $config_path_v6 = '/etc/kea/kea-dhcp6.conf',
   String $lease_database_name = $kea_dhcp::lease_database_name,
   String $lease_database_user = $kea_dhcp::lease_database_user,
   Stdlib::Host $lease_database_host = $kea_dhcp::lease_database_host,
   Integer $lease_database_port = $kea_dhcp::lease_database_port,
   Array[Hash] $server_options = $kea_dhcp::array_dhcp4_server_options,
+  Array[Hash] $server_options_v6 = $kea_dhcp::array_dhcp6_server_options,
   Optional[Hash] $dhcp_ddns = $kea_dhcp::dhcp_ddns,
   Sensitive[String] $sensitive_db_password = $kea_dhcp::sensitive_db_password,
+  Boolean $enable_dhcp6 = $kea_dhcp::enable_dhcp6,
   Boolean $enable_ddns = $kea_dhcp::enable_ddns,
   Stdlib::IP::Address::V4 $ddns_ip_address = $kea_dhcp::ddns_ip_address,
   Stdlib::Port $ddns_port = $kea_dhcp::ddns_port,
@@ -70,19 +82,21 @@ class kea_dhcp::config (
     default      => [],
   }
 
+  $lease_database = {
+    'type'     => 'postgresql',
+    'name'     => $lease_database_name,
+    'user'     => $lease_database_user,
+    'password' => $sensitive_db_password,
+    'host'     => $lease_database_host,
+    'port'     => $lease_database_port,
+  }
+
   $server_params = {
     ensure          => present,
     config_path     => $config_path,
     options         => $server_options,
     hooks_libraries => $hooks_libraries,
-    lease_database  => {
-      'type'     => 'postgresql',
-      'name'     => $lease_database_name,
-      'user'     => $lease_database_user,
-      'password' => $sensitive_db_password,
-      'host'     => $lease_database_host,
-      'port'     => $lease_database_port,
-    },
+    lease_database  => $lease_database,
   }
 
   $final_params = $dhcp_ddns ? {
@@ -92,6 +106,16 @@ class kea_dhcp::config (
 
   kea_dhcp_v4_server { 'dhcp4':
     * => $final_params,
+  }
+
+  if $enable_dhcp6 {
+    kea_dhcp_v6_server { 'dhcp6':
+      ensure          => present,
+      config_path     => $config_path_v6,
+      options         => $server_options_v6,
+      hooks_libraries => $hooks_libraries,
+      lease_database  => $lease_database,
+    }
   }
 
   if $enable_ddns {
