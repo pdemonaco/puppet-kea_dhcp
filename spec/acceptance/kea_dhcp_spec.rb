@@ -176,4 +176,51 @@ describe 'kea_dhcp class on Rocky' do
       expect(status.stdout.strip).to eq('active')
     end
   end
+
+  describe 'DHCPv6 integration' do
+    let(:db_password) { 'LitmusP@ssw0rd!' }
+    let(:manifest) do
+      <<~PP
+        class { 'kea_dhcp':
+          sensitive_db_password      => Sensitive('#{db_password}'),
+          enable_dhcp6               => true,
+          array_dhcp6_server_options => [
+            { 'name' => 'dns-servers', 'data' => '2001:db8::1' },
+          ],
+          enable_ddns                => false,
+          enable_ctrl_agent          => false,
+        }
+      PP
+    end
+
+    it 'applies the manifest idempotently' do
+      apply_manifest(manifest, catch_failures: true)
+      apply_manifest(manifest, catch_changes: true)
+    end
+
+    it 'creates the kea-dhcp6 configuration with the expected lease database' do
+      config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp6.conf').stdout)
+      dhcp6 = config.fetch('Dhcp6')
+      lease_db = dhcp6.fetch('lease-database')
+
+      expect(lease_db['name']).to eq('kea')
+      expect(lease_db['user']).to eq('kea')
+      expect(lease_db['port']).to eq(5433)
+    end
+
+    it 'writes server-level options to the kea-dhcp6 configuration' do
+      config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp6.conf').stdout)
+      dhcp6 = config.fetch('Dhcp6')
+
+      server_options = Array(dhcp6['option-data'])
+      dns_option = server_options.find { |opt| opt['name'] == 'dns-servers' }
+      expect(dns_option).not_to be_nil
+      expect(dns_option['data']).to eq('2001:db8::1')
+    end
+
+    it 'starts the kea-dhcp6 service when enabled' do
+      status = run_shell('systemctl is-active kea-dhcp6', expect_failures: false)
+      expect(status.stdout.strip).to eq('active')
+    end
+  end
 end
