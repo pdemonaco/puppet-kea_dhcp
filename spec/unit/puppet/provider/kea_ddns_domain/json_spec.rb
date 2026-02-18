@@ -86,6 +86,32 @@ describe provider_class do
 
       expect(domains[0]['key-name']).to eq('tsig-key-foo')
     end
+
+    it 'uses title as domain_name when not explicitly provided' do
+      write_config(config_path, 'DhcpDdns' => { 'forward-ddns' => {}, 'reverse-ddns' => {} })
+
+      resource = type_class.new(
+        name: 'example.com.',
+        config_path: config_path,
+        direction: 'forward',
+        dns_servers: [{ 'ip-address' => '192.168.1.10', 'port' => 53 }],
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.post_resource_eval
+
+      config = read_config(config_path)
+      domains = config['DhcpDdns']['forward-ddns']['ddns-domains']
+
+      expect(domains.length).to eq(1)
+      expect(domains[0]['name']).to eq('example.com.')
+      expect(domains[0]['user-context']['puppet_name']).to eq('example.com.')
+    end
   end
 
   context 'when creating reverse domain' do
@@ -139,7 +165,7 @@ describe provider_class do
       resource = type_class.new(
         name: 'example_domain',
         config_path: config_path,
-        domain_name: 'updated.example.com.',
+        domain_name: 'example.com.',
         direction: 'forward',
         dns_servers: [{ 'ip-address' => '192.168.1.20', 'port' => 5353 }],
       )
@@ -158,7 +184,6 @@ describe provider_class do
       provider.resource = resource
       resource.provider = provider
 
-      provider.domain_name = 'updated.example.com.'
       provider.dns_servers = [{ 'ip-address' => '192.168.1.20', 'port' => 5353 }]
       provider.flush
       provider_class.post_resource_eval
@@ -166,7 +191,7 @@ describe provider_class do
       config = read_config(config_path)
       domains = config['DhcpDdns']['forward-ddns']['ddns-domains']
 
-      expect(domains[0]['name']).to eq('updated.example.com.')
+      expect(domains[0]['name']).to eq('example.com.')
       expect(domains[0]['dns-servers']).to contain_exactly({ 'ip-address' => '192.168.1.20', 'port' => 5353 })
     end
   end

@@ -187,10 +187,25 @@ class { 'kea_dhcp':
 
 #### DDNS Domain Configuration
 
-Define forward and reverse DNS zones using `kea_ddns_domain` resources:
+Define forward and reverse DNS zones using `kea_ddns_domain` resources.
+
+The `domain_name` parameter is a namevar, which means the resource title becomes the domain name unless you explicitly specify a different domain_name. This makes common cases more concise:
 
 ```puppet
-# Forward DNS zone
+# Resource title becomes the domain_name (recommended)
+kea_ddns_domain { 'example.com.':
+  ensure      => present,
+  direction   => 'forward',
+  key_name    => 'ddns-key',
+  dns_servers => [
+    {
+      'ip-address' => '192.0.2.53',
+      'port'       => 53,
+    },
+  ],
+}
+
+# Use alternate title with explicit domain_name
 kea_ddns_domain { 'forward-zone':
   ensure      => present,
   domain_name => 'example.com.',
@@ -204,10 +219,9 @@ kea_ddns_domain { 'forward-zone':
   ],
 }
 
-# Reverse DNS zone
-kea_ddns_domain { 'reverse-zone':
+# Reverse DNS zone using domain as title
+kea_ddns_domain { '2.0.192.in-addr.arpa.':
   ensure      => present,
-  domain_name => '2.0.192.in-addr.arpa.',
   direction   => 'reverse',
   dns_servers => [
     {

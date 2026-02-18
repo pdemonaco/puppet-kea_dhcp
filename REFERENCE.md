@@ -536,10 +536,6 @@ Array of DNS server configurations (ip-address, port, optional key-name).
 
 Default value: `[]`
 
-##### `domain_name`
-
-The DNS domain name (e.g., "example.com." or "1.168.192.in-addr.arpa.").
-
 ##### `ensure`
 
 Valid values: `present`, `absent`
@@ -557,6 +553,7 @@ Optional TSIG key name to use for all DNS servers in this domain (unless overrid
 The following parameters are available in the `kea_ddns_domain` type.
 
 * [`config_path`](#-kea_ddns_domain--config_path)
+* [`domain_name`](#-kea_ddns_domain--domain_name)
 * [`name`](#-kea_ddns_domain--name)
 * [`provider`](#-kea_ddns_domain--provider)
 
@@ -566,11 +563,15 @@ Path to the kea-dhcp-ddns configuration file.
 
 Default value: `/etc/kea/kea-dhcp-ddns.conf`
 
+##### <a name="-kea_ddns_domain--domain_name"></a>`domain_name`
+
+The DNS domain name (e.g., "example.com." or "1.168.192.in-addr.arpa."). Defaults to the resource title.
+
 ##### <a name="-kea_ddns_domain--name"></a>`name`
 
 namevar
 
-The Puppet identifier for this DDNS domain.
+The Puppet identifier for this DDNS domain. Defaults to the domain_name value.
 
 ##### <a name="-kea_ddns_domain--provider"></a>`provider`
 
@@ -850,8 +851,7 @@ Utility type for declaring DDNS domains
 Alias of
 
 ```puppet
-Struct[name                   => String,
-  domain_name            => String[1],
+Struct[domain_name            => String[1],
   direction              => Enum['forward', 'reverse'],
   Optional[key_name]     => String,
   Optional[dns_servers]  => Array[Struct[{
@@ -865,15 +865,10 @@ Struct[name                   => String,
 
 The following parameters are available in the `Kea_Dhcp::DdnsDomain` data type:
 
-* [`name`](#-Kea_Dhcp--DdnsDomain--name)
 * [`domain_name`](#-Kea_Dhcp--DdnsDomain--domain_name)
 * [`direction`](#-Kea_Dhcp--DdnsDomain--direction)
 * [`key_name`](#-Kea_Dhcp--DdnsDomain--key_name)
 * [`dns_servers`](#-Kea_Dhcp--DdnsDomain--dns_servers)
-
-##### <a name="-Kea_Dhcp--DdnsDomain--name"></a>`name`
-
-Unique Puppet identifier for this DDNS domain
 
 ##### <a name="-Kea_Dhcp--DdnsDomain--domain_name"></a>`domain_name`
 
@@ -908,8 +903,7 @@ Utility type for declaring multiple reservations
 Alias of
 
 ```puppet
-Struct[name                  => String,
-  identifier            => Kea_Dhcp::MacAddress,
+Struct[identifier            => Kea_Dhcp::MacAddress,
   identifier_type       => Enum['hw-address', 'client-id'],
   ip_address            => Stdlib::IP::Address::V4,
   Optional[hostname]    => String,
@@ -920,16 +914,11 @@ Struct[name                  => String,
 
 The following parameters are available in the `Kea_Dhcp::V4Reservation` data type:
 
-* [`name`](#-Kea_Dhcp--V4Reservation--name)
 * [`identifier`](#-Kea_Dhcp--V4Reservation--identifier)
 * [`identifier_type`](#-Kea_Dhcp--V4Reservation--identifier_type)
 * [`ip_address`](#-Kea_Dhcp--V4Reservation--ip_address)
 * [`hostname`](#-Kea_Dhcp--V4Reservation--hostname)
 * [`scope_id`](#-Kea_Dhcp--V4Reservation--scope_id)
-
-##### <a name="-Kea_Dhcp--V4Reservation--name"></a>`name`
-
-Unique identifier for the reservation used only by Puppet
 
 ##### <a name="-Kea_Dhcp--V4Reservation--identifier"></a>`identifier`
 
@@ -959,8 +948,7 @@ Utility type for declaring multiple scopes
 Alias of
 
 ```puppet
-Struct[name              => String,
-  subnet            => Stdlib::IP::Address::V4::CIDR,
+Struct[subnet            => Stdlib::IP::Address::V4::CIDR,
   Optional[id]      => Variant[Integer[0], Enum['auto']],
   Optional[options] => Array[Hash],
   Optional[pools]   => Array[String]]
@@ -970,15 +958,10 @@ Struct[name              => String,
 
 The following parameters are available in the `Kea_Dhcp::V4Scope` data type:
 
-* [`name`](#-Kea_Dhcp--V4Scope--name)
 * [`subnet`](#-Kea_Dhcp--V4Scope--subnet)
 * [`id`](#-Kea_Dhcp--V4Scope--id)
 * [`options`](#-Kea_Dhcp--V4Scope--options)
 * [`pools`](#-Kea_Dhcp--V4Scope--pools)
-
-##### <a name="-Kea_Dhcp--V4Scope--name"></a>`name`
-
-Unique identifier for the scope used only by Puppet
 
 ##### <a name="-Kea_Dhcp--V4Scope--subnet"></a>`subnet`
 

@@ -4,7 +4,18 @@ Puppet::Type.newtype(:kea_ddns_domain) do
   @doc = 'Manages Kea DHCP-DDNS domain configurations (forward or reverse).'
 
   newparam(:name, namevar: true) do
-    desc 'The Puppet identifier for this DDNS domain.'
+    desc 'The Puppet identifier for this DDNS domain. Defaults to the domain_name value.'
+  end
+
+  newparam(:domain_name) do
+    desc 'The DNS domain name (e.g., "example.com." or "1.168.192.in-addr.arpa."). Defaults to the resource title.'
+
+    defaultto { @resource[:name] }
+
+    validate do |value|
+      raise ArgumentError, 'domain_name must be a string' unless value.is_a?(String)
+      raise ArgumentError, 'domain_name cannot be empty' if value.strip.empty?
+    end
   end
 
   newparam(:config_path) do
@@ -13,15 +24,6 @@ Puppet::Type.newtype(:kea_ddns_domain) do
   end
 
   ensurable
-
-  newproperty(:domain_name) do
-    desc 'The DNS domain name (e.g., "example.com." or "1.168.192.in-addr.arpa.").'
-
-    validate do |value|
-      raise ArgumentError, 'domain_name must be a string' unless value.is_a?(String)
-      raise ArgumentError, 'domain_name cannot be empty' if value.strip.empty?
-    end
-  end
 
   newproperty(:direction) do
     desc 'The direction of this domain: "forward" or "reverse".'

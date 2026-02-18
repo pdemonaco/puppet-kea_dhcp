@@ -1,8 +1,5 @@
 # @summary Utility type for declaring DDNS domains
 #
-# @param name
-#   Unique Puppet identifier for this DDNS domain
-#
 # @param domain_name
 #   The DNS domain name (e.g., 'example.com.' or '1.168.192.in-addr.arpa.')
 #
@@ -18,7 +15,6 @@
 #     - 'port' (optional): Port number (1-65535, defaults to 53)
 #     - 'key-name' (optional): TSIG key name for this specific server
 type Kea_Dhcp::DdnsDomain = Struct[
-  name                   => String,
   domain_name            => String[1],
   direction              => Enum['forward', 'reverse'],
   Optional[key_name]     => String,

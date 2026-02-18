@@ -5,24 +5,21 @@ require 'spec_helper'
 describe 'Kea_Dhcp::DdnsDomain' do
   it {
     is_expected.to allow_value({
-                                 'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                 'domain_name' => 'example.com.',
     'direction' => 'forward',
                                })
   }
 
   it {
     is_expected.to allow_value({
-                                 'name' => 'test-reverse',
-    'domain_name' => '1.168.192.in-addr.arpa.',
+                                 'domain_name' => '1.168.192.in-addr.arpa.',
     'direction' => 'reverse',
                                })
   }
 
   it {
     is_expected.to allow_value({
-                                 'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                 'domain_name' => 'example.com.',
     'direction' => 'forward',
     'key_name' => 'my-tsig-key',
                                })
@@ -30,8 +27,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.to allow_value({
-                                 'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                 'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => [
       { 'ip-address' => '192.0.2.1' },
@@ -41,8 +37,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.to allow_value({
-                                 'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                 'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => [
       { 'ip-address' => '192.0.2.1', 'port' => 53 },
@@ -52,8 +47,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.to allow_value({
-                                 'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                 'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => [
       { 'ip-address' => '192.0.2.1', 'port' => 5353, 'key-name' => 'server-key' },
@@ -63,8 +57,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.to allow_value({
-                                 'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                 'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => [
       { 'ip-address' => '2001:db8::1' },
@@ -74,8 +67,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.to allow_value({
-                                 'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                 'domain_name' => 'example.com.',
     'direction' => 'forward',
     'key_name' => 'domain-key',
     'dns_servers' => [
@@ -87,8 +79,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.to allow_value({
-                                 'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                 'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => [
       { 'ip-address' => '192.0.2.1', 'port' => 1 },
@@ -98,8 +89,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.to allow_value({
-                                 'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                 'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => [
       { 'ip-address' => '192.0.2.1', 'port' => 65535 },
@@ -109,45 +99,33 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.not_to allow_value({
+                                     'direction' => 'forward',
+                                   })
+  }
+
+  it {
+    is_expected.not_to allow_value({
                                      'domain_name' => 'example.com.',
+                                   })
+  }
+
+  it {
+    is_expected.not_to allow_value({
+                                     'domain_name' => '',
     'direction' => 'forward',
                                    })
   }
 
   it {
     is_expected.not_to allow_value({
-                                     'name' => 'test-domain',
-    'direction' => 'forward',
-                                   })
-  }
-
-  it {
-    is_expected.not_to allow_value({
-                                     'name' => 'test-domain',
-    'domain_name' => 'example.com.',
-                                   })
-  }
-
-  it {
-    is_expected.not_to allow_value({
-                                     'name' => 'test-domain',
-    'domain_name' => '',
-    'direction' => 'forward',
-                                   })
-  }
-
-  it {
-    is_expected.not_to allow_value({
-                                     'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                     'domain_name' => 'example.com.',
     'direction' => 'invalid',
                                    })
   }
 
   it {
     is_expected.not_to allow_value({
-                                     'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                     'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => [
       { 'ip-address' => 'not-an-ip' },
@@ -157,8 +135,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.not_to allow_value({
-                                     'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                     'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => [
       { 'port' => 53 },
@@ -168,8 +145,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.not_to allow_value({
-                                     'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                     'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => [
       { 'ip-address' => '192.0.2.1', 'port' => 0 },
@@ -179,8 +155,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.not_to allow_value({
-                                     'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                     'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => [
       { 'ip-address' => '192.0.2.1', 'port' => 65536 },
@@ -190,8 +165,7 @@ describe 'Kea_Dhcp::DdnsDomain' do
 
   it {
     is_expected.not_to allow_value({
-                                     'name' => 'test-domain',
-    'domain_name' => 'example.com.',
+                                     'domain_name' => 'example.com.',
     'direction' => 'forward',
     'dns_servers' => 'not-an-array',
                                    })
