@@ -27,6 +27,10 @@
 #   An array of additional options to include in the DHCPv4 server configuration.
 #   These options are treateds as the default options for all subnets managed by the server.
 #
+# @param array_dhcp6_server_options
+#   An array of additional options to include in the DHCPv6 server configuration.
+#   These options are treated as the default options for all subnets managed by the server.
+#
 # @param dhcp_ddns
 #   Hash of DHCP-DDNS configuration settings to include in the DHCPv4 server configuration.
 #   These settings control how the DHCPv4 server communicates with the DDNS server.
@@ -64,6 +68,7 @@
 class kea_dhcp (
   Sensitive[String] $sensitive_db_password,
   Array[Hash] $array_dhcp4_server_options = [],
+  Array[Hash] $array_dhcp6_server_options = [],
   Optional[Hash] $dhcp_ddns = undef,
   Boolean $enable_dhcp4 = true,
   Boolean $enable_dhcp6 = false,
