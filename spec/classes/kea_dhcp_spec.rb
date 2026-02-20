@@ -42,6 +42,16 @@ describe 'kea_dhcp' do
 
       it { is_expected.to compile.with_all_deps }
 
+      it { is_expected.to contain_class('kea_dhcp::install::postgresql') }
+      it { is_expected.to contain_class('kea_dhcp::install::yum_isc_repos') }
+      it { is_expected.to contain_package('isc-kea') }
+      it { is_expected.to contain_package('isc-kea-pgsql') }
+      it { is_expected.to contain_package('log4cplus') }
+      it { is_expected.to contain_service('kea-dhcp4') }
+      it { is_expected.to contain_service('kea-dhcp-ddns') }
+      it { is_expected.to contain_yumrepo('isc-kea-3-0') }
+      it { is_expected.to contain_yumrepo('isc-kea-3-0-noarch') }
+
       it { is_expected.to contain_class('Kea_dhcp::Install').with_before(['Class[Kea_dhcp::Config]']) }
       it {
         is_expected.to contain_class('kea_dhcp::config').with(
@@ -128,7 +138,7 @@ describe 'kea_dhcp' do
         end
       end
 
-      context 'with PostgreSQL setup' do
+      context 'with PostgreSQL setup (instance mode, default)' do
         it 'configures the server instance' do
           is_expected.to contain_postgresql__server_instance('kea').with(
             'config_settings' => {
@@ -179,6 +189,43 @@ describe 'kea_dhcp' do
             'user' => 'postgres',
           ).that_requires('Postgresql::Server::Db[kea]')
         end
+      end
+
+      context 'with database install mode' do
+        let(:params) do
+          super().merge(lease_backend_install_mode: 'database')
+        end
+
+        it { is_expected.to compile.with_all_deps }
+        it { is_expected.not_to contain_postgresql__server_instance('kea') }
+
+        it 'creates the application database without a dedicated instance' do
+          is_expected.to contain_postgresql__server__db('kea').with(
+            'user' => 'kea',
+            'port' => 5433,
+          )
+          is_expected.not_to contain_postgresql__server__db('kea').with(
+            'instance' => 'kea',
+          )
+        end
+
+        it 'initializes the schema' do
+          is_expected.to contain_exec('init_kea_dhcp_schema').with(
+            'command' => "/usr/sbin/kea-admin db-init pgsql -u kea -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P 5433 -n kea",
+            'user' => 'postgres',
+          ).that_requires('Postgresql::Server::Db[kea]')
+        end
+      end
+
+      context 'with none install mode' do
+        let(:params) do
+          super().merge(lease_backend_install_mode: 'none')
+        end
+
+        it { is_expected.to compile.with_all_deps }
+        it { is_expected.not_to contain_class('kea_dhcp::install::postgresql') }
+        it { is_expected.not_to contain_postgresql__server_instance('kea') }
+        it { is_expected.not_to contain_exec('init_kea_dhcp_schema') }
       end
     end
   end

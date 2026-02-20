@@ -2,8 +2,11 @@
 #
 # @param backend
 #   The backend type to use for storing leases and host reservations.
+# @param install_mode
+#   Controls how the lease database backend is installed.
 class kea_dhcp::install (
   Kea_Dhcp::Backends $backend = $kea_dhcp::backend,
+  Kea_Dhcp::Db_install_mode $install_mode = $kea_dhcp::lease_backend_install_mode,
 ) {
   # log4cplus is required by isc-kea-common and is available in EPEL
   package { 'log4cplus':
@@ -17,7 +20,9 @@ class kea_dhcp::install (
 
   case $backend {
     'postgresql': {
-      include 'kea_dhcp::install::postgresql'
+      if $install_mode != 'none' {
+        include 'kea_dhcp::install::postgresql'
+      }
       package { 'isc-kea-pgsql':
         ensure => installed,
       }
