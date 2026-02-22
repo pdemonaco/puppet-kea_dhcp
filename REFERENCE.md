@@ -23,6 +23,7 @@
 
 ### Data types
 
+* [`Kea_Dhcp::Db_install_mode`](#Kea_Dhcp--Db_install_mode): Defines the valid database installation modes for Kea DHCP
 * [`Kea_Dhcp::DdnsDomain`](#Kea_Dhcp--DdnsDomain): Utility type for declaring DDNS domains
 * [`Kea_Dhcp::MacAddress`](#Kea_Dhcp--MacAddress): MAC address format for Kea DHCP identifiers
 * [`Kea_Dhcp::V4Reservation`](#Kea_Dhcp--V4Reservation): Utility type for declaring multiple reservations
@@ -57,6 +58,7 @@ The following parameters are available in the `kea_dhcp` class:
 * [`lease_database_user`](#-kea_dhcp--lease_database_user)
 * [`lease_database_host`](#-kea_dhcp--lease_database_host)
 * [`lease_database_port`](#-kea_dhcp--lease_database_port)
+* [`lease_backend_install_mode`](#-kea_dhcp--lease_backend_install_mode)
 
 ##### <a name="-kea_dhcp--sensitive_db_password"></a>`sensitive_db_password`
 
@@ -206,6 +208,17 @@ Data type: `Stdlib::Port`
 Port number of the PostgreSQL server if that backend is selected.
 
 Default value: `5433`
+
+##### <a name="-kea_dhcp--lease_backend_install_mode"></a>`lease_backend_install_mode`
+
+Data type: `Kea_Dhcp::Db_install_mode`
+
+Controls how the lease database backend is installed.
+- 'instance': Create a dedicated PostgreSQL instance (default)
+- 'database': Add the Kea database to the existing default instance
+- 'none': Skip database installation (database is managed externally)
+
+Default value: `'instance'`
 
 ### <a name="kea_dhcp--config"></a>`kea_dhcp::config`
 
@@ -369,6 +382,7 @@ Installs all dependencies of the isc-kea application
 The following parameters are available in the `kea_dhcp::install` class:
 
 * [`backend`](#-kea_dhcp--install--backend)
+* [`install_mode`](#-kea_dhcp--install--install_mode)
 
 ##### <a name="-kea_dhcp--install--backend"></a>`backend`
 
@@ -377,6 +391,14 @@ Data type: `Kea_Dhcp::Backends`
 The backend type to use for storing leases and host reservations.
 
 Default value: `$kea_dhcp::backend`
+
+##### <a name="-kea_dhcp--install--install_mode"></a>`install_mode`
+
+Data type: `Kea_Dhcp::Db_install_mode`
+
+Controls how the lease database backend is installed.
+
+Default value: `$kea_dhcp::lease_backend_install_mode`
 
 ### <a name="kea_dhcp--install--postgresql"></a>`kea_dhcp::install::postgresql`
 
@@ -388,10 +410,13 @@ The following parameters are available in the `kea_dhcp::install::postgresql` cl
 
 * [`database_name`](#-kea_dhcp--install--postgresql--database_name)
 * [`database_user`](#-kea_dhcp--install--postgresql--database_user)
+* [`instance_user`](#-kea_dhcp--install--postgresql--instance_user)
+* [`instance_group`](#-kea_dhcp--install--postgresql--instance_group)
 * [`instance_directory_root`](#-kea_dhcp--install--postgresql--instance_directory_root)
 * [`sensitive_db_password`](#-kea_dhcp--install--postgresql--sensitive_db_password)
 * [`manage_package_repo`](#-kea_dhcp--install--postgresql--manage_package_repo)
 * [`instance_port`](#-kea_dhcp--install--postgresql--instance_port)
+* [`install_mode`](#-kea_dhcp--install--postgresql--install_mode)
 
 ##### <a name="-kea_dhcp--install--postgresql--database_name"></a>`database_name`
 
@@ -409,13 +434,23 @@ The PostgreSQL user to create for Kea DHCP.
 
 Default value: `$kea_dhcp::lease_database_user`
 
+##### <a name="-kea_dhcp--install--postgresql--instance_user"></a>`instance_user`
+
+Data type: `String`
+
+The OS user that owns the PostgreSQL instance. Sourced from hiera.
+
+##### <a name="-kea_dhcp--install--postgresql--instance_group"></a>`instance_group`
+
+Data type: `String`
+
+The OS group that owns the PostgreSQL instance. Sourced from hiera.
+
 ##### <a name="-kea_dhcp--install--postgresql--instance_directory_root"></a>`instance_directory_root`
 
 Data type: `Stdlib::Absolutepath`
 
-The root directory for the PostgreSQL instance directories.
-
-Default value: `'/opt/pgsql'`
+The root directory for the PostgreSQL instance directories. Sourced from hiera.
 
 ##### <a name="-kea_dhcp--install--postgresql--sensitive_db_password"></a>`sensitive_db_password`
 
@@ -440,6 +475,16 @@ Data type: `Stdlib::Port`
 The port number for the PostgreSQL instance to listen on.
 
 Default value: `$kea_dhcp::lease_database_port`
+
+##### <a name="-kea_dhcp--install--postgresql--install_mode"></a>`install_mode`
+
+Data type: `Kea_Dhcp::Db_install_mode`
+
+Controls how the database is installed:
+- 'instance': Create a dedicated PostgreSQL instance
+- 'database': Add the Kea database to the existing default instance
+
+Default value: `$kea_dhcp::install::install_mode`
 
 ### <a name="kea_dhcp--install--yum_isc_repos"></a>`kea_dhcp::install::yum_isc_repos`
 
@@ -843,6 +888,14 @@ The specific backend to use for this `kea_dhcp_v4_server` resource. You will sel
 usually discover the appropriate provider for your platform.
 
 ## Data types
+
+### <a name="Kea_Dhcp--Db_install_mode"></a>`Kea_Dhcp::Db_install_mode`
+
+- instance: Create a new dedicated PostgreSQL instance for Kea DHCP
+- database: Add the Kea database to the existing default PostgreSQL instance
+- none: Skip database installation (database is managed externally)
+
+Alias of `Enum['instance', 'database', 'none']`
 
 ### <a name="Kea_Dhcp--DdnsDomain"></a>`Kea_Dhcp::DdnsDomain`
 

@@ -61,6 +61,12 @@
 # @param lease_database_port
 #   Port number of the PostgreSQL server if that backend is selected.
 #
+# @param lease_backend_install_mode
+#   Controls how the lease database backend is installed.
+#   - 'instance': Create a dedicated PostgreSQL instance (default)
+#   - 'database': Add the Kea database to the existing default instance
+#   - 'none': Skip database installation (database is managed externally)
+#
 class kea_dhcp (
   Sensitive[String] $sensitive_db_password,
   Array[Hash] $array_dhcp4_server_options = [],
@@ -80,6 +86,7 @@ class kea_dhcp (
   Stdlib::Host $lease_database_host = '127.0.0.1',
   Stdlib::Port $lease_database_port = 5433,
   Kea_Dhcp::Backends $backend = 'postgresql',
+  Kea_Dhcp::Db_install_mode $lease_backend_install_mode = 'instance',
 ) {
   include kea_dhcp::install
   include kea_dhcp::config

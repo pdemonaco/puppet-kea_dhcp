@@ -8,7 +8,7 @@ describe 'kea_dhcp class on Rocky' do
     install_repository
   end
 
-  describe 'base installation' do
+  describe 'instance mode installation' do
     let(:db_password) { 'LitmusP@ssw0rd!' }
     let(:manifest) do
       <<~PP
@@ -19,6 +19,7 @@ describe 'kea_dhcp class on Rocky' do
           ],
           enable_ddns                 => false,
           enable_ctrl_agent           => false,
+          lease_backend_install_mode  => 'instance',
         }
       PP
     end
@@ -174,6 +175,64 @@ describe 'kea_dhcp class on Rocky' do
     it 'starts the kea-dhcp-ddns service when enabled' do
       status = run_shell('systemctl is-active kea-dhcp-ddns', expect_failures: false)
       expect(status.stdout.strip).to eq('active')
+    end
+  end
+
+  describe 'database mode installation' do
+    before(:all) do
+      reset_kea_configs
+    end
+
+    let(:db_password) { 'LitmusP@ssw0rd!' }
+    let(:manifest) do
+      <<~PP
+        class { 'kea_dhcp':
+          sensitive_db_password      => Sensitive('#{db_password}'),
+          array_dhcp4_server_options => [
+            { 'name' => 'routers', 'data' => '192.0.2.1' },
+          ],
+          enable_ddns                => false,
+          enable_ctrl_agent          => false,
+          lease_database_port        => 5432,
+          lease_backend_install_mode => 'database',
+        }
+      PP
+    end
+
+    it 'applies the manifest idempotently' do
+      apply_manifest(manifest, catch_failures: true)
+      apply_manifest(manifest, catch_changes: true)
+    end
+
+    it 'creates the kea database in the default PostgreSQL instance' do
+      query = "SELECT 1 FROM pg_database WHERE datname = 'kea';"
+      result = run_shell("su - postgres -c \"psql -p 5432 -tAc \\\"#{query}\\\"\"")
+      expect(result.stdout).to match(%r{1})
+    end
+
+    it 'initializes the Kea schema in the default PostgreSQL instance' do
+      result = run_shell("su - postgres -c \"psql -p 5432 -d kea -tAc \\\"SELECT 1 FROM schema_version;\\\"\"")
+      expect(result.stdout).to match(%r{1})
+    end
+
+    it 'starts the kea-dhcp4 service' do
+      status = run_shell('systemctl is-active kea-dhcp4', expect_failures: false)
+      expect(status.stdout.strip).to eq('active')
+    end
+
+    it 'creates the kea-dhcp4 configuration pointing to the default instance' do
+      config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp4.conf').stdout)
+      dhcp4 = config.fetch('Dhcp4')
+      lease_db = dhcp4.fetch('lease-database')
+
+      expect(lease_db['name']).to eq('kea')
+      expect(lease_db['user']).to eq('kea')
+      expect(lease_db['port']).to eq(5432)
+
+      server_options = Array(dhcp4['option-data'])
+      router_option = server_options.find { |opt| opt['name'] == 'routers' }
+      expect(router_option).not_to be_nil
+      expect(router_option['data']).to eq('192.0.2.1')
     end
   end
 end
