@@ -25,9 +25,17 @@ This module impacts three main areas:
 
 The `isc-kea` package is installed from the official ISC Cloudsmith repository. Repository management is handled automatically for RedHat-family systems.
 
-#### 2 - PostgreSQL Instance
+#### 2 - PostgreSQL Backend
 
-A dedicated PostgreSQL instance is created for lease storage. The instance runs on port 5433 by default with the Kea schema initialized via `kea-admin db-init`.
+How the PostgreSQL backend is provisioned depends on the `lease_backend_install_mode` parameter:
+
+| Mode | Behaviour |
+|---|---|
+| `instance` (default) | Creates a dedicated PostgreSQL instance on port 5433 with its own data directory |
+| `database` | Adds the Kea database to the existing default PostgreSQL instance |
+| `none` | Skips all database provisioning; the database is managed externally |
+
+In all cases the Kea schema is initialised via `kea-admin db-init` when the database is first created.
 
 #### 3 - Configuration
 
@@ -62,6 +70,58 @@ class { 'kea_dhcp':
   ],
   enable_ddns                => false,
   enable_ctrl_agent          => false,
+}
+```
+
+### Database Backend Installation Modes
+
+#### Dedicated PostgreSQL instance (default)
+
+Creates a new PostgreSQL instance exclusively for Kea, running on port 5433 under its own system user. This is the recommended mode for production deployments where isolation is desired.
+
+```puppet
+class { 'kea_dhcp':
+  sensitive_db_password      => Sensitive('SecurePassword123!'),
+  array_dhcp4_server_options => [
+    { 'name' => 'routers', 'data' => '192.0.2.1' },
+  ],
+  enable_ddns                => false,
+  enable_ctrl_agent          => false,
+  lease_backend_install_mode => 'instance',
+}
+```
+
+#### Existing default PostgreSQL instance
+
+Adds the Kea database to the default PostgreSQL instance already running on the node. Use `lease_database_port` to match the port of the existing instance (typically 5432).
+
+```puppet
+class { 'kea_dhcp':
+  sensitive_db_password      => Sensitive('SecurePassword123!'),
+  array_dhcp4_server_options => [
+    { 'name' => 'routers', 'data' => '192.0.2.1' },
+  ],
+  enable_ddns                => false,
+  enable_ctrl_agent          => false,
+  lease_database_port        => 5432,
+  lease_backend_install_mode => 'database',
+}
+```
+
+#### Externally managed database
+
+Skips all database provisioning. Use this when the PostgreSQL database is managed on a separate host or by another Puppet module. Set `lease_database_host` to the remote server address.
+
+```puppet
+class { 'kea_dhcp':
+  sensitive_db_password      => Sensitive('SecurePassword123!'),
+  array_dhcp4_server_options => [
+    { 'name' => 'routers', 'data' => '192.0.2.1' },
+  ],
+  enable_ddns                => false,
+  enable_ctrl_agent          => false,
+  lease_database_host        => 'database1.example.org',
+  lease_backend_install_mode => 'none',
 }
 ```
 
@@ -265,6 +325,7 @@ The DDNS server configuration is managed centrally through the `kea_dhcp` class.
 ```yaml
 ---
 kea_dhcp::sensitive_db_password: ENC[PKCS7,...]
+kea_dhcp::lease_backend_install_mode: 'instance'
 kea_dhcp::array_dhcp4_server_options:
   - name: 'domain-name-servers'
     data: '8.8.8.8, 8.8.4.4'
