@@ -110,6 +110,14 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
   def flush
     return if @property_flush.empty? && @property_hash.empty?
 
+    Puppet.debug do
+      lease_db = (value_for(:lease_database) || {}).dup
+      lease_db['password'] = '[REDACTED]' if lease_db.key?('password')
+      "kea_dhcp_v4_server[#{resource[:name]}]: lease_database=#{lease_db.inspect} " \
+        "options=#{value_for(:options).inspect} hooks_libraries=#{value_for(:hooks_libraries).inspect} " \
+        "dhcp_ddns=#{value_for(:dhcp_ddns).inspect}"
+    end
+
     config = self.class.config_for(config_path)
     config[self.class::DHCP4_KEY] ||= {}
     dhcp4 = config[self.class::DHCP4_KEY]

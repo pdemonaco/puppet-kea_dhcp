@@ -105,11 +105,26 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
     commit!(path) if commit
   end
 
+  def self.redact_config(config)
+    config = config.dup
+    dhcp4 = config[DHCP4_KEY]
+    return config unless dhcp4 && dhcp4[LEASE_DATABASE_KEY]
+
+    dhcp4 = dhcp4.dup
+    db = dhcp4[LEASE_DATABASE_KEY].dup
+    db['password'] = '[REDACTED]' if db.key?('password')
+    dhcp4[LEASE_DATABASE_KEY] = db
+    config[DHCP4_KEY] = dhcp4
+    config
+  end
+
   def self.commit!(path)
     return unless dirty_paths.include?(path)
 
     stage_config(path) unless staged_paths.include?(path)
     temp = temp_configs[path]
+
+    Puppet.debug { "kea-dhcp4 committing config to #{path}:\n#{JSON.pretty_generate(redact_config(config_for(path)))}" }
 
     Puppet::Util::Execution.execute(['kea-dhcp4', '-t', temp.temp_path], failonfail: true)
 

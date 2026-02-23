@@ -124,11 +124,28 @@ class PuppetX::KeaDhcp::Provider::DdnsJson < Puppet::Provider
     commit!(path) if commit
   end
 
+  def self.redact_config(config)
+    config = config.dup
+    ddns = config[DDNS_KEY]
+    return config unless ddns && ddns['tsig-keys']
+
+    ddns = ddns.dup
+    ddns['tsig-keys'] = ddns['tsig-keys'].map do |key|
+      key = key.dup
+      key['secret'] = '[REDACTED]' if key.key?('secret')
+      key
+    end
+    config[DDNS_KEY] = ddns
+    config
+  end
+
   def self.commit!(path)
     return unless dirty_paths.include?(path)
 
     stage_config(path) unless staged_paths.include?(path)
     temp = temp_configs[path]
+
+    Puppet.debug { "kea-dhcp-ddns committing config to #{path}:\n#{JSON.pretty_generate(redact_config(config_for(path)))}" }
 
     # Run validation
     result = Puppet::Util::Execution.execute(['kea-dhcp-ddns', '-t', temp.temp_path], failonfail: false, combine: true)
