@@ -151,8 +151,8 @@ class PuppetX::KeaDhcp::Provider::DdnsJson < Puppet::Provider
     result = Puppet::Util::Execution.execute(['kea-dhcp-ddns', '-t', temp.temp_path], failonfail: false, combine: true)
 
     unless result.exitstatus.zero?
-      config_content = File.read(temp.temp_path)
-      raise Puppet::Error, "kea-dhcp-ddns validation failed with exit code #{result.exitstatus}\nValidation output:\n#{result}\n\nConfig content:\n#{config_content}"
+      result.to_s.each_line { |line| Puppet.err(line.chomp) if line.include?(' ERROR ') }
+      raise Puppet::Error, "kea-dhcp-ddns validation failed for #{path}"
     end
 
     FileUtils.mkdir_p(File.dirname(path))

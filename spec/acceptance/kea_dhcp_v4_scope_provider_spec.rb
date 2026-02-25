@@ -171,6 +171,7 @@ describe 'kea_dhcp_v4_scope provider' do
 
       result = apply_manifest(manifest, catch_failures: false)
       expect(result.stderr).to match(%r{post_resource_eval failed.*Kea_dhcp_v4_scope}m)
+      expect(result.stderr).to match(%r{ERROR \[kea-dhcp4})
 
       # Verify the original config file is unchanged
       checksum_after = run_shell("md5sum #{config_path}").stdout.split.first

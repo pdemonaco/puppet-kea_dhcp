@@ -330,6 +330,52 @@ describe 'kea_ddns_domain provider' do
     end
   end
 
+  context 'when the generated configuration is invalid' do
+    let(:invalid_config) do
+      <<~JSON
+        {
+          "DhcpDdns": {
+            "ip-address": "127.0.0.1",
+            "port": 53001,
+            "forward-ddns": { "ddns-domains": [] },
+            "reverse-ddns": { "ddns-domains": [] },
+            "tsig-keys": [
+              {
+                "name": "bad-key",
+                "algorithm": "NOT-A-VALID-ALGORITHM",
+                "secret": "aGVsbG8="
+              }
+            ]
+          }
+        }
+      JSON
+    end
+
+    before(:each) do
+      run_shell("cat <<'JSON' > #{config_path}\n#{invalid_config}\nJSON")
+    end
+
+    it 'prints kea errors and preserves the original config when validation fails' do
+      checksum_before = run_shell("md5sum #{config_path}").stdout.split.first
+
+      manifest = <<~PP
+        kea_ddns_server { 'dhcp-ddns':
+          ensure      => present,
+          ip_address  => '127.0.0.1',
+          port        => 53001,
+          config_path => '#{config_path}',
+        }
+      PP
+
+      result = apply_manifest(manifest, catch_failures: false)
+      expect(result.stderr).to match(%r{post_resource_eval failed.*Kea_ddns_server}m)
+      expect(result.stderr).to match(%r{ERROR \[kea-dhcp-ddns})
+
+      checksum_after = run_shell("md5sum #{config_path}").stdout.split.first
+      expect(checksum_after).to eq(checksum_before)
+    end
+  end
+
   context 'when preserving unmanaged domains' do
     let(:preseed_config) do
       <<~JSON

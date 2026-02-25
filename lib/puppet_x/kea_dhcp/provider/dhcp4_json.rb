@@ -126,7 +126,12 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
 
     Puppet.debug { "kea-dhcp4 committing config to #{path}:\n#{JSON.pretty_generate(redact_config(config_for(path)))}" }
 
-    Puppet::Util::Execution.execute(['kea-dhcp4', '-t', temp.temp_path], failonfail: true)
+    result = Puppet::Util::Execution.execute(['kea-dhcp4', '-t', temp.temp_path], failonfail: false, combine: true)
+
+    unless result.exitstatus.zero?
+      result.to_s.each_line { |line| Puppet.err(line.chomp) if line.include?(' ERROR ') }
+      raise Puppet::Error, "kea-dhcp4 validation failed for #{path}"
+    end
 
     FileUtils.mkdir_p(File.dirname(path))
     FileUtils.mv(temp.temp_path, path, force: true)

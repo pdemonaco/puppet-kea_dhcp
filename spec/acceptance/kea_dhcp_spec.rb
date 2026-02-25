@@ -178,6 +178,31 @@ describe 'kea_dhcp class on Rocky' do
     end
   end
 
+  describe 'invalid server options' do
+    before(:all) do
+      reset_kea_configs
+    end
+
+    let(:manifest) do
+      <<~PP
+        class { 'kea_dhcp':
+          sensitive_db_password      => Sensitive('LitmusP@ssw0rd!'),
+          array_dhcp4_server_options => [
+            { 'name' => 'time-servers', 'data' => 'not-an-ip-address' },
+          ],
+          enable_ddns                => false,
+          enable_ctrl_agent          => false,
+        }
+      PP
+    end
+
+    it 'prints kea errors when validation fails' do
+      result = apply_manifest(manifest, catch_failures: false)
+      expect(result.stderr).to match(%r{post_resource_eval failed.*Kea_dhcp_v4_server}m)
+      expect(result.stderr).to match(%r{ERROR \[kea-dhcp4})
+    end
+  end
+
   describe 'database mode installation' do
     before(:all) do
       reset_kea_configs
@@ -211,7 +236,7 @@ describe 'kea_dhcp class on Rocky' do
     end
 
     it 'initializes the Kea schema in the default PostgreSQL instance' do
-      result = run_shell("su - postgres -c \"psql -p 5432 -d kea -tAc \\\"SELECT 1 FROM schema_version;\\\"\"")
+      result = run_shell('su - postgres -c "psql -p 5432 -d kea -tAc \"SELECT 1 FROM schema_version;\""')
       expect(result.stdout).to match(%r{1})
     end
 

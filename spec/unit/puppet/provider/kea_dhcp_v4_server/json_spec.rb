@@ -26,7 +26,8 @@ describe provider_class do
   before(:each) do
     tempfile.close
     provider_class.clear_state!
-    allow(Puppet::Util::Execution).to receive(:execute).and_return('')
+    execution_result = double('execution_result', exitstatus: 0, to_s: '')
+    allow(Puppet::Util::Execution).to receive(:execute).and_return(execution_result)
   end
 
   after(:each) do
