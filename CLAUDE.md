@@ -34,6 +34,9 @@ pdk test unit --tests=spec/classes/kea_dhcp_spec.rb
 ### Acceptance Tests
 
 ```bash
+# Deploy the module to the test nodes
+pdk bundle exec rake litmus:install_module
+
 # Run all acceptance tests
 pdk bundle exec rake litmus:acceptance:parallel
 
