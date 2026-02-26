@@ -114,5 +114,6 @@ class kea_dhcp::install::postgresql (
     environment => ["PGPASSWORD=${plain_db_password}"],
     user        => $instance_user,
     require     => Postgresql::Server::Db[$database_name],
+    cwd         => '/tmp',
   }
 }
