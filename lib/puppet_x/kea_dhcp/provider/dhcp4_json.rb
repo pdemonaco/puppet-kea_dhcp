@@ -42,7 +42,11 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
   SERVER_INSTANCE_NAME = 'dhcp4'
 
   def self.config_cache
-    @config_cache ||= {}
+    # All DHCPv4 provider classes share one cache so cross-provider changes
+    # (e.g. kea_dhcp_v4_server + kea_dhcp_v4_scope) are committed together.
+    root = PuppetX::KeaDhcp::Provider::Dhcp4Json
+    root.instance_variable_get(:@config_cache) ||
+      root.instance_variable_set(:@config_cache, {})
   end
 
   def self.dirty_paths
@@ -79,7 +83,7 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
 
   def self.clear_state!
     cleanup_temp_configs
-    @config_cache = {}
+    config_cache.clear
     @dirty_paths = Set.new
     @staged_paths = Set.new
     @commit_controllers = Set.new

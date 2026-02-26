@@ -199,6 +199,6 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
   end
 
   def self.post_resource_eval
-    commit_uncontrolled!
+    commit_all!
   end
 end

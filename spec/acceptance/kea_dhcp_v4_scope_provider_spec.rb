@@ -136,6 +136,39 @@ describe 'kea_dhcp_v4_scope provider' do
     end
   end
 
+  context 'when kea_dhcp_v4_server is present in the same catalog' do
+    before(:each) do
+      run_shell("rm -f #{config_path}")
+    end
+
+    it 'commits scope changes even when server controls the config path' do
+      manifest = <<~PP
+        class { 'kea_dhcp':
+          sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          enable_ddns           => false,
+          enable_ctrl_agent     => false,
+        }
+
+        kea_dhcp_v4_scope { 'server-managed-scope':
+          ensure => present,
+          subnet => '192.0.2.0/24',
+          pools  => ['192.0.2.10 - 192.0.2.200'],
+        }
+      PP
+
+      apply_manifest(manifest, catch_failures: true)
+
+      # Verify scope was flushed to disk even though kea_dhcp_v4_server was
+      # also in the catalog (regression test for the commit propagation bug)
+      config = JSON.parse(run_shell("cat #{config_path}").stdout)
+      subnets = config['Dhcp4']['subnet4']
+      scope = subnets.find { |s| s.dig('user-context', 'puppet_name') == 'server-managed-scope' }
+
+      expect(scope).not_to be_nil
+      expect(scope['subnet']).to eq('192.0.2.0/24')
+    end
+  end
+
   context 'when the generated configuration is invalid' do
     let(:valid_config) do
       <<~JSON
