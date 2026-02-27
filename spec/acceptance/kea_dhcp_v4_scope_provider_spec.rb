@@ -203,7 +203,7 @@ describe 'kea_dhcp_v4_scope provider' do
       PP
 
       result = apply_manifest(manifest, catch_failures: false)
-      expect(result.stderr).to match(%r{post_resource_eval failed.*Kea_dhcp_v4_scope}m)
+      expect(result.stderr).to match(%r{Kea_dhcp_v4_commit\[#{Regexp.escape(config_path)}\]})
       expect(result.stderr).to match(%r{ERROR \[kea-dhcp4})
 
       # Verify the original config file is unchanged

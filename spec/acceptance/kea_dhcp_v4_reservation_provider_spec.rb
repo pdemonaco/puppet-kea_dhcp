@@ -268,7 +268,7 @@ describe 'kea_dhcp_v4_reservation provider' do
       PP
 
       result = apply_manifest(manifest, catch_failures: false)
-      expect(result.stderr).to match(%r{post_resource_eval failed.*Kea_dhcp_v4_reservation}m)
+      expect(result.stderr).to match(%r{Kea_dhcp_v4_commit\[#{Regexp.escape(config_path)}\]})
       expect(result.stderr).to match(%r{ERROR \[kea-dhcp4})
 
       checksum_after = run_shell("md5sum #{config_path}").stdout.split.first

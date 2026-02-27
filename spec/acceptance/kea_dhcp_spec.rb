@@ -198,7 +198,7 @@ describe 'kea_dhcp class on Rocky' do
 
     it 'prints kea errors when validation fails' do
       result = apply_manifest(manifest, catch_failures: false)
-      expect(result.stderr).to match(%r{post_resource_eval failed.*Kea_dhcp_v4_server}m)
+      expect(result.stderr).to match(%r{Kea_dhcp_v4_commit\[/etc/kea/kea-dhcp4\.conf\]})
       expect(result.stderr).to match(%r{ERROR \[kea-dhcp4})
     end
   end
