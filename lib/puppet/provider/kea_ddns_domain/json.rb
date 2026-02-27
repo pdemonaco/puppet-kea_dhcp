@@ -224,8 +224,4 @@ Puppet::Type.type(:kea_ddns_domain).provide(:json, parent: PuppetX::KeaDhcp::Pro
   def config_path
     resource[:config_path] || self.class::DEFAULT_CONFIG_PATH
   end
-
-  def self.post_resource_eval
-    commit_uncontrolled!
-  end
 end

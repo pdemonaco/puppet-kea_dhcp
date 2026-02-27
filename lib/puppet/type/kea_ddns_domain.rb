@@ -110,4 +110,11 @@ Puppet::Type.newtype(:kea_ddns_domain) do
   autobefore(:service) do
     ['kea-dhcp-ddns']
   end
+
+  def generate
+    path = self[:config_path]
+    return [] if catalog.resource(:kea_ddns_commit, path)
+
+    [Puppet::Type.type(:kea_ddns_commit).new(name: path)]
+  end
 end

@@ -49,7 +49,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       forward_ddns = config['DhcpDdns']['forward-ddns']
@@ -79,7 +79,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       domains = config['DhcpDdns']['forward-ddns']['ddns-domains']
@@ -103,7 +103,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       domains = config['DhcpDdns']['forward-ddns']['ddns-domains']
@@ -132,7 +132,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       reverse_ddns = config['DhcpDdns']['reverse-ddns']
@@ -186,7 +186,7 @@ describe provider_class do
 
       provider.dns_servers = [{ 'ip-address' => '192.168.1.20', 'port' => 5353 }]
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       domains = config['DhcpDdns']['forward-ddns']['ddns-domains']
@@ -238,7 +238,7 @@ describe provider_class do
 
       provider.destroy
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       domains = config['DhcpDdns']['forward-ddns']['ddns-domains']

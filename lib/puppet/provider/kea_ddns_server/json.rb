@@ -186,12 +186,6 @@ Puppet::Type.type(:kea_ddns_server).provide(:json, parent: PuppetX::KeaDhcp::Pro
   def config_path
     path = resource[:config_path] || self.class::DEFAULT_CONFIG_PATH
     self.class.server_config_path = path
-    self.class.register_commit_controller(path)
     path
-  end
-
-  def self.post_resource_eval
-    commit_all!
-    unregister_commit_controller(server_config_path) if server_config_path
   end
 end

@@ -368,7 +368,7 @@ describe 'kea_ddns_domain provider' do
       PP
 
       result = apply_manifest(manifest, catch_failures: false)
-      expect(result.stderr).to match(%r{post_resource_eval failed.*Kea_ddns_server}m)
+      expect(result.stderr).to match(%r{Kea_ddns_commit\[#{Regexp.escape(config_path)}\]})
       expect(result.stderr).to match(%r{ERROR \[kea-dhcp-ddns})
 
       checksum_after = run_shell("md5sum #{config_path}").stdout.split.first

@@ -48,7 +48,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       ddns = config['DhcpDdns']
@@ -75,7 +75,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       ddns = config['DhcpDdns']
@@ -102,7 +102,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
 
@@ -144,7 +144,7 @@ describe provider_class do
       provider.ip_address = '192.168.1.20'
       provider.port = 8080
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       ddns = config['DhcpDdns']
@@ -182,7 +182,7 @@ describe provider_class do
 
       provider.tsig_keys = [{ 'name' => 'new-key', 'algorithm' => 'HMAC-SHA256', 'secret' => 'abc123==' }]
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       ddns = config['DhcpDdns']
@@ -228,7 +228,7 @@ describe provider_class do
 
       provider.destroy
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       ddns = config['DhcpDdns']
