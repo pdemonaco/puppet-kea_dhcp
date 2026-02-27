@@ -197,8 +197,4 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
     baseline = subnets.map { |s| s['id'] }.compact.max || 0
     baseline + 1
   end
-
-  def self.post_resource_eval
-    commit_all!
-  end
 end

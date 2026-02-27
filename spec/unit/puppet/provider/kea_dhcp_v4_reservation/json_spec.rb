@@ -51,7 +51,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       subnet = config['Dhcp4']['subnet4'].first
@@ -89,7 +89,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       subnet = config['Dhcp4']['subnet4'].first
@@ -126,7 +126,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       reservation = config['Dhcp4']['subnet4'].first['reservations'].first
@@ -183,7 +183,7 @@ describe provider_class do
 
       provider.ip_address = '192.0.2.150'
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       reservation = config['Dhcp4']['subnet4'].first['reservations'].first
@@ -239,7 +239,7 @@ describe provider_class do
 
       provider.destroy
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       reservations = config['Dhcp4']['subnet4'].first['reservations']
@@ -394,7 +394,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       subnet = config['Dhcp4']['subnet4'].find { |s| s['id'] == 3 }
@@ -430,7 +430,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       reservation = config['Dhcp4']['subnet4'].first['reservations'].first
@@ -465,7 +465,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       reservation = config['Dhcp4']['subnet4'].first['reservations'].first

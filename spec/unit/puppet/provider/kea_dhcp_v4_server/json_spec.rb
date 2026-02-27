@@ -59,7 +59,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       dhcp4 = config['Dhcp4']
@@ -89,7 +89,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       dhcp4 = config['Dhcp4']
@@ -116,7 +116,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       expect(config['Dhcp4']).not_to have_key('hooks-libraries')
@@ -143,7 +143,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       dhcp4 = config['Dhcp4']
@@ -172,7 +172,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       expect(config['Dhcp4']).not_to have_key('dhcp-ddns')
@@ -211,7 +211,7 @@ describe provider_class do
       provider.options = [{ 'name' => 'domain-name-servers', 'data' => '8.8.8.8' }]
       provider.lease_database = lease_db.merge('password' => 'new_secret')
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       dhcp4 = config['Dhcp4']
@@ -250,7 +250,7 @@ describe provider_class do
 
       provider.hooks_libraries = [{ 'library' => '/usr/lib/kea/hooks/libdhcp_stat_cmds.so' }]
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       expect(config['Dhcp4']['hooks-libraries']).to contain_exactly(
@@ -285,7 +285,7 @@ describe provider_class do
 
       provider.destroy
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       expect(config['Dhcp4']).not_to have_key('lease-database')
@@ -317,7 +317,7 @@ describe provider_class do
 
       provider.destroy
       provider.flush
-      provider_class.post_resource_eval
+      provider_class.commit_all!
 
       config = read_config(config_path)
       expect(config['Dhcp4']).not_to have_key('hooks-libraries')

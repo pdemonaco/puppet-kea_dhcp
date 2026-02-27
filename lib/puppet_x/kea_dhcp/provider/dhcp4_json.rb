@@ -49,8 +49,14 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
       root.instance_variable_set(:@config_cache, {})
   end
 
+  # dirty_paths, staged_paths, and temp_configs are pinned to the base class so
+  # that all provider subclasses (server, scope, reservation, commit) share a
+  # single tracking set. This allows the commit provider to see every path
+  # dirtied by any sibling provider.
   def self.dirty_paths
-    @dirty_paths ||= Set.new
+    root = PuppetX::KeaDhcp::Provider::Dhcp4Json
+    root.instance_variable_get(:@dirty_paths) ||
+      root.instance_variable_set(:@dirty_paths, Set.new)
   end
 
   def self.config_for(path)
@@ -84,22 +90,15 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
   def self.clear_state!
     cleanup_temp_configs
     config_cache.clear
-    @dirty_paths = Set.new
-    @staged_paths = Set.new
-    @commit_controllers = Set.new
+    root = PuppetX::KeaDhcp::Provider::Dhcp4Json
+    root.instance_variable_set(:@dirty_paths, Set.new)
+    root.instance_variable_set(:@staged_paths, Set.new)
+    root.instance_variable_set(:@temp_configs, {})
     @server_config_path = nil
   end
 
   class << self
     attr_accessor :server_config_path
-  end
-
-  def self.register_commit_controller(path)
-    commit_controllers.add(path)
-  end
-
-  def self.unregister_commit_controller(path)
-    commit_controllers.delete(path)
   end
 
   def self.save_if_dirty(path, commit: false)
@@ -149,10 +148,6 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
     dirty_paths.to_a.each { |path| commit!(path) }
   end
 
-  def self.commit_uncontrolled!
-    (dirty_paths - commit_controllers).to_a.each { |path| commit!(path) }
-  end
-
   def self.stringify_keys(hash)
     return {} unless hash.respond_to?(:each)
 
@@ -184,10 +179,7 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
     end
 
     path = self.class.server_config_path
-    if path
-      self.class.register_commit_controller(path)
-      return path
-    end
+    return path if path
 
     server_resource = server_resource_from_catalog
     if server_resource
@@ -196,21 +188,22 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
              end
       path ||= server_resource.to_hash[:config_path] if server_resource.respond_to?(:to_hash)
       path ||= server_resource.to_hash['config_path'] if server_resource.respond_to?(:to_hash)
-      if path
-        self.class.register_commit_controller(path)
-        return path
-      end
+      return path if path
     end
 
     DEFAULT_CONFIG_PATH
   end
 
   def self.temp_configs
-    @temp_configs ||= {}
+    root = PuppetX::KeaDhcp::Provider::Dhcp4Json
+    root.instance_variable_get(:@temp_configs) ||
+      root.instance_variable_set(:@temp_configs, {})
   end
 
   def self.staged_paths
-    @staged_paths ||= Set.new
+    root = PuppetX::KeaDhcp::Provider::Dhcp4Json
+    root.instance_variable_get(:@staged_paths) ||
+      root.instance_variable_set(:@staged_paths, Set.new)
   end
 
   def self.stage_config(path)
@@ -234,12 +227,8 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
     temp_configs.each_key { |path| cleanup_temp_config(path) }
   end
 
-  def self.commit_controllers
-    @commit_controllers ||= Set.new
-  end
-
   private_class_method :temp_configs, :staged_paths, :stage_config, :temp_config_for,
-                        :cleanup_temp_config, :cleanup_temp_configs, :commit_controllers
+                        :cleanup_temp_config, :cleanup_temp_configs
 
   private
 

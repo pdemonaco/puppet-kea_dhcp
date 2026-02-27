@@ -177,12 +177,6 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
   def config_path
     path = super
     self.class.server_config_path = path
-    self.class.register_commit_controller(path)
     path
-  end
-
-  def self.post_resource_eval
-    commit_all!
-    unregister_commit_controller(server_config_path) if server_config_path
   end
 end

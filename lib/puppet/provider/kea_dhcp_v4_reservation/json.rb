@@ -299,8 +299,4 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
       end
     end
   end
-
-  def self.post_resource_eval
-    commit_all!
-  end
 end

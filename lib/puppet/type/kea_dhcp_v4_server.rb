@@ -236,4 +236,11 @@ Puppet::Type.newtype(:kea_dhcp_v4_server) do
   autorequire(:file) do
     [self[:config_path]]
   end
+
+  def generate
+    path = self[:config_path]
+    return [] if catalog.resource(:kea_dhcp_v4_commit, path)
+
+    [Puppet::Type.type(:kea_dhcp_v4_commit).new(name: path)]
+  end
 end
