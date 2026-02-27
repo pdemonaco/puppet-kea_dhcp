@@ -77,7 +77,12 @@ describe 'kea_ddns_commit provider' do
     end
 
     before(:each) do
+      run_shell("cp #{config_path} #{config_path}.commit_test_bak 2>/dev/null || true")
       run_shell("cat <<'JSON' > #{config_path}\n#{invalid_config}\nJSON")
+    end
+
+    after(:each) do
+      run_shell("mv #{config_path}.commit_test_bak #{config_path} 2>/dev/null || true")
     end
 
     it 'attributes the error to Kea_ddns_commit and preserves the original config' do
