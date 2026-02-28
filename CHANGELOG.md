@@ -2,11 +2,19 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [0.7.0](https://github.com/pdemonaco/puppet-kea_dhcp/tree/0.7.0) (2026-02-28)
+
+[Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.6.0...0.7.0)
+
+### Added
+
+- feat\(providers\): emit debug output when --debug flag is passed [\#22](https://github.com/pdemonaco/puppet-kea_dhcp/pull/22) ([pdemonaco](https://github.com/pdemonaco))
+
 ## [0.6.0](https://github.com/pdemonaco/puppet-kea_dhcp/tree/0.6.0) (2026-02-22)
 
 [Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.5.0...0.6.0)
 
-### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
+### Added
 
 - Fix postgresql home [\#20](https://github.com/pdemonaco/puppet-kea_dhcp/pull/20) ([pdemonaco](https://github.com/pdemonaco))
 
@@ -14,7 +22,7 @@ All notable changes to this project will be documented in this file. The format 
 
 [Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.4.0...0.5.0)
 
-### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
+### Added
 
 - Minor type tweaks [\#17](https://github.com/pdemonaco/puppet-kea_dhcp/pull/17) ([pdemonaco](https://github.com/pdemonaco))
 
@@ -22,7 +30,7 @@ All notable changes to this project will be documented in this file. The format 
 
 [Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.3.0...0.4.0)
 
-### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
+### Added
 
 - type checking enhancements [\#13](https://github.com/pdemonaco/puppet-kea_dhcp/pull/13) ([pdemonaco](https://github.com/pdemonaco))
 
@@ -38,7 +46,7 @@ All notable changes to this project will be documented in this file. The format 
 
 [Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.1.0...0.2.0)
 
-### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
+### Added
 
 - host reservation provider [\#7](https://github.com/pdemonaco/puppet-kea_dhcp/pull/7) ([pdemonaco](https://github.com/pdemonaco))
 
