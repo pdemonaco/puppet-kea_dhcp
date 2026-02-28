@@ -4,6 +4,25 @@ require 'spec_helper_acceptance'
 
 describe 'kea_ddns_commit provider' do
   let(:config_path) { '/etc/kea/kea-dhcp-ddns.conf' }
+  let(:invalid_config) do
+    <<~JSON
+      {
+        "DhcpDdns": {
+          "ip-address": "127.0.0.1",
+          "port": 53001,
+          "forward-ddns": { "ddns-domains": [] },
+          "reverse-ddns": { "ddns-domains": [] },
+          "tsig-keys": [
+            {
+              "name": "bad-key",
+              "algorithm": "NOT-A-VALID-ALGORITHM",
+              "secret": "aGVsbG8="
+            }
+          ]
+        }
+      }
+    JSON
+  end
 
   before :all do
     reset_kea_configs
@@ -55,26 +74,6 @@ describe 'kea_ddns_commit provider' do
     end
   end
 
-  let(:invalid_config) do
-    <<~JSON
-      {
-        "DhcpDdns": {
-          "ip-address": "127.0.0.1",
-          "port": 53001,
-          "forward-ddns": { "ddns-domains": [] },
-          "reverse-ddns": { "ddns-domains": [] },
-          "tsig-keys": [
-            {
-              "name": "bad-key",
-              "algorithm": "NOT-A-VALID-ALGORITHM",
-              "secret": "aGVsbG8="
-            }
-          ]
-        }
-      }
-    JSON
-  end
-
   context 'when verifying temp directory cleanup' do
     before(:each) do
       run_shell("find /tmp -maxdepth 1 -name 'kea-ddns*' -type d -exec rm -rf {} + 2>/dev/null; true")
@@ -120,7 +119,6 @@ describe 'kea_ddns_commit provider' do
   end
 
   context 'when the generated configuration is invalid' do
-
     before(:each) do
       run_shell("cp #{config_path} #{config_path}.commit_test_bak 2>/dev/null || true")
       run_shell("cat <<'JSON' > #{config_path}\n#{invalid_config}\nJSON")
