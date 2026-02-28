@@ -12,6 +12,11 @@ Puppet::Type.newtype(:kea_dhcp_v4_reservation) do
     defaultto '/etc/kea/kea-dhcp4.conf'
   end
 
+  newparam(:socket_path) do
+    desc 'Path to the kea-dhcp4 control socket. Used by the unix_socket provider.'
+    defaultto '/run/kea/kea4-ctrl-socket'
+  end
+
   ensurable
 
   newproperty(:scope_id) do

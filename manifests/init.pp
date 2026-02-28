@@ -1,7 +1,7 @@
 # @summary Manages an instance of the Kea DHCP server
 #
-# @param sensitive_db_password
-#  The password for the Kea PostgreSQL user, wrapped in a Sensitive type.
+# @param lease_sensitive_db_password
+#  The password for the Kea PostgreSQL lease database user, wrapped in a Sensitive type.
 #  It is assumed that the user name is kea, however this can be changed in
 #  the kea_dhcp::install::postgresql class if needed.
 #
@@ -18,10 +18,13 @@
 #   Whether to enable the control agent. The agent provides a REST API to
 #   manage the Kea services on this node.
 #
-# @param backend
-#   The backend type to use for storing leases and host reservations.
-#   Might also contain other configuration information, depending on the
-#   mood of the developer.
+# @param lease_backend
+#   The backend type to use for storing DHCP leases.
+#
+# @param host_backend
+#   The backend type to use for storing host reservations. Use 'json' (default)
+#   to store reservations in kea-dhcp4.conf, or 'postgresql' to store them in
+#   the host database and manage them via the libdhcp_host_cmds.so hook.
 #
 # @param array_dhcp4_listen_interfaces
 #   List of interfaces the DHCPv4 server listens on. Use ['*'] for all interfaces.
@@ -74,8 +77,24 @@
 #   - 'database': Add the Kea database to the existing default instance
 #   - 'none': Skip database installation (database is managed externally)
 #
+# @param host_sensitive_db_password
+#   The password for the Kea PostgreSQL host database user, wrapped in a Sensitive type.
+#   Required when host_backend is 'postgresql'.
+#
+# @param host_database_name
+#   Name of the PostgreSQL database to use for host reservations.
+#
+# @param host_database_user
+#   PostgreSQL user to connect to the host database.
+#
+# @param host_database_host
+#   Hostname or IP address of the host database PostgreSQL server.
+#
+# @param host_database_port
+#   Port number of the host database PostgreSQL server.
+#
 class kea_dhcp (
-  Sensitive[String] $sensitive_db_password,
+  Sensitive[String] $lease_sensitive_db_password,
   Array[String] $array_dhcp4_listen_interfaces = ['*'],
   Optional[Enum['raw', 'udp']] $dhcp4_socket_type = undef,
   Array[Hash] $array_dhcp4_server_options = [],
@@ -94,8 +113,14 @@ class kea_dhcp (
   String $lease_database_user = 'kea',
   Stdlib::Host $lease_database_host = '127.0.0.1',
   Stdlib::Port $lease_database_port = 5433,
-  Kea_Dhcp::Backends $backend = 'postgresql',
+  Kea_Dhcp::Backends $lease_backend = 'postgresql',
   Kea_Dhcp::Db_install_mode $lease_backend_install_mode = 'instance',
+  Enum['postgresql', 'json'] $host_backend = 'json',
+  Optional[Sensitive[String]] $host_sensitive_db_password = undef,
+  String $host_database_name = 'kea',
+  String $host_database_user = 'kea',
+  Stdlib::Host $host_database_host = '127.0.0.1',
+  Stdlib::Port $host_database_port = 5432,
 ) {
   include kea_dhcp::install
   include kea_dhcp::config

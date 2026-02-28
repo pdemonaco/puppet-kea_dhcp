@@ -23,6 +23,17 @@ describe provider_class do
     }
   end
 
+  let(:host_db) do
+    {
+      'type' => 'postgresql',
+      'name' => 'kea_hosts',
+      'user' => 'kea',
+      'password' => 'host_password',
+      'host' => '127.0.0.1',
+      'port' => 5432,
+    }
+  end
+
   before(:each) do
     tempfile.close
     provider_class.clear_state!
@@ -98,6 +109,56 @@ describe provider_class do
         { 'library' => '/usr/lib/kea/hooks/libdhcp_lease_cmds.so' },
         { 'library' => '/usr/lib/kea/hooks/libdhcp_stat_cmds.so', 'parameters' => { 'enabled' => true } },
       )
+    end
+
+    it 'writes host-database when provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        host_database: host_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['host-database']).to include(
+        'type' => 'postgresql',
+        'name' => 'kea_hosts',
+        'user' => 'kea',
+        'password' => 'host_password',
+        'host' => '127.0.0.1',
+        'port' => 5432,
+      )
+    end
+
+    it 'does not write host-database key when not provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('host-database')
     end
 
     it 'does not write hooks-libraries key when empty' do
@@ -410,6 +471,37 @@ describe provider_class do
       expect(config['Dhcp4']).not_to have_key('hooks-libraries')
     end
 
+    it 'removes host-database when destroying' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'lease-database' => lease_db,
+          'host-database' => host_db,
+        },
+      )
+
+      property_hash = {
+        ensure: :present,
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        host_database: host_db,
+      }
+
+      resource = type_class.new(name: 'dhcp4', config_path: config_path, lease_database: lease_db)
+
+      provider = provider_class.new(property_hash)
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.destroy
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('host-database')
+    end
+
     it 'removes interfaces-config when destroying' do
       write_config(
         config_path,
@@ -600,6 +692,10 @@ describe provider_class do
 
     it 'returns true when interfaces-config key exists' do
       expect(provider_class.present?({ 'interfaces-config' => { 'interfaces' => ['*'] } })).to be true
+    end
+
+    it 'returns true when host-database key exists' do
+      expect(provider_class.present?({ 'host-database' => {} })).to be true
     end
 
     it 'returns false when no server keys exist' do

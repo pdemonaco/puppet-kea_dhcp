@@ -10,8 +10,8 @@
 #   The OS group that owns the PostgreSQL instance. Sourced from hiera.
 # @param instance_directory_root
 #   The root directory for the PostgreSQL instance directories. Sourced from hiera.
-# @param sensitive_db_password
-#   The password for the PostgreSQL user, wrapped in a Sensitive type.
+# @param lease_sensitive_db_password
+#   The password for the PostgreSQL lease database user, wrapped in a Sensitive type.
 # @param manage_package_repo
 #   Whether to manage the PostgreSQL package repository.
 # @param instance_port
@@ -26,14 +26,14 @@ class kea_dhcp::install::postgresql (
   Stdlib::Absolutepath $instance_directory_root,
   String $database_name = $kea_dhcp::lease_database_name,
   String $database_user = $kea_dhcp::lease_database_user,
-  Sensitive[String] $sensitive_db_password = $kea_dhcp::sensitive_db_password,
+  Sensitive[String] $lease_sensitive_db_password = $kea_dhcp::lease_sensitive_db_password,
   Boolean $manage_package_repo = true,
   Stdlib::Port $instance_port = $kea_dhcp::lease_database_port,
   Kea_Dhcp::Db_install_mode $install_mode = $kea_dhcp::install::install_mode,
 ) {
   include 'postgresql::server'
 
-  $plain_db_password = $sensitive_db_password.unwrap
+  $plain_db_password = $lease_sensitive_db_password.unwrap
   $kea_unless = @("CMD"/L)
     /usr/bin/psql -p ${instance_port} -d ${database_name} \
     -tAc "SELECT 1 FROM schema_version;" | \
@@ -93,7 +93,7 @@ class kea_dhcp::install::postgresql (
 
     postgresql::server::db { $database_name:
       user     => $database_user,
-      password => $sensitive_db_password,
+      password => $lease_sensitive_db_password,
       instance => $instance_name,
       port     => $instance_port,
       require  => Postgresql::Server_instance[$instance_name],
@@ -102,7 +102,7 @@ class kea_dhcp::install::postgresql (
     # database mode: add to the existing default PostgreSQL instance
     postgresql::server::db { $database_name:
       user     => $database_user,
-      password => $sensitive_db_password,
+      password => $lease_sensitive_db_password,
       port     => $instance_port,
     }
   }

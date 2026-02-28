@@ -24,7 +24,7 @@
 # @param server_options
 #   Array of additional options to include in the DHCPv4 server configuration.
 #
-# @param sensitive_db_password
+# @param lease_sensitive_db_password
 #   Sensitive value containing the password for the lease database user.
 #
 # @param dhcp_ddns
@@ -51,8 +51,28 @@
 # @param ddns_tsig_keys
 #   TSIG keys for DNS authentication.
 #
-# @param backend
+# @param lease_backend
 #   The backend type used for storing leases. Used to determine which hooks libraries to load.
+#
+# @param host_backend
+#   The backend type used for host reservations. When 'postgresql', configures the
+#   host-database connection and loads the libdhcp_host_cmds.so hook.
+#
+# @param host_sensitive_db_password
+#   Sensitive value containing the password for the host database user.
+#
+# @param host_database_name
+#   Name of the PostgreSQL database for host reservations.
+#
+# @param host_database_user
+#   PostgreSQL user for the host database.
+#
+# @param host_database_host
+#   Hostname or IP address of the host database server.
+#
+# @param host_database_port
+#   Port number of the host database server.
+#
 class kea_dhcp::config (
   Stdlib::Absolutepath $config_path = '/etc/kea/kea-dhcp4.conf',
   String $lease_database_name = $kea_dhcp::lease_database_name,
@@ -63,7 +83,7 @@ class kea_dhcp::config (
   Optional[Enum['raw', 'udp']] $dhcp4_socket_type = $kea_dhcp::dhcp4_socket_type,
   Array[Hash] $server_options = $kea_dhcp::array_dhcp4_server_options,
   Optional[Hash] $dhcp_ddns = $kea_dhcp::dhcp_ddns,
-  Sensitive[String] $sensitive_db_password = $kea_dhcp::sensitive_db_password,
+  Sensitive[String] $lease_sensitive_db_password = $kea_dhcp::lease_sensitive_db_password,
   Boolean $enable_ddns = $kea_dhcp::enable_ddns,
   Stdlib::IP::Address::V4 $ddns_ip_address = $kea_dhcp::ddns_ip_address,
   Stdlib::Port $ddns_port = $kea_dhcp::ddns_port,
@@ -71,12 +91,25 @@ class kea_dhcp::config (
   Enum['UDP', 'TCP'] $ddns_ncr_protocol = $kea_dhcp::ddns_ncr_protocol,
   Enum['JSON'] $ddns_ncr_format = $kea_dhcp::ddns_ncr_format,
   Array[Hash] $ddns_tsig_keys = $kea_dhcp::ddns_tsig_keys,
-  Kea_Dhcp::Backends $backend = $kea_dhcp::backend,
+  Kea_Dhcp::Backends $lease_backend = $kea_dhcp::lease_backend,
+  Enum['postgresql', 'json'] $host_backend = $kea_dhcp::host_backend,
+  Optional[Sensitive[String]] $host_sensitive_db_password = $kea_dhcp::host_sensitive_db_password,
+  String $host_database_name = $kea_dhcp::host_database_name,
+  String $host_database_user = $kea_dhcp::host_database_user,
+  Stdlib::Host $host_database_host = $kea_dhcp::host_database_host,
+  Integer $host_database_port = $kea_dhcp::host_database_port,
 ) {
-  $hooks_libraries = $backend ? {
+  $lease_hooks = $lease_backend ? {
     'postgresql' => [{ 'library' => '/usr/lib64/kea/hooks/libdhcp_pgsql.so' }],
     default      => [],
   }
+
+  $host_hooks = $host_backend ? {
+    'postgresql' => [{ 'library' => '/usr/lib64/kea/hooks/libdhcp_host_cmds.so' }],
+    default      => [],
+  }
+
+  $hooks_libraries = $lease_hooks + $host_hooks
 
   $base_interfaces_config = { 'interfaces' => $listen_interfaces }
   $interfaces_config = $dhcp4_socket_type ? {
@@ -84,7 +117,7 @@ class kea_dhcp::config (
     default => $base_interfaces_config + { 'dhcp-socket-type' => $dhcp4_socket_type },
   }
 
-  $server_params = {
+  $base_server_params = {
     ensure            => present,
     config_path       => $config_path,
     options           => $server_options,
@@ -94,15 +127,32 @@ class kea_dhcp::config (
       'type'     => 'postgresql',
       'name'     => $lease_database_name,
       'user'     => $lease_database_user,
-      'password' => $sensitive_db_password,
+      'password' => $lease_sensitive_db_password,
       'host'     => $lease_database_host,
       'port'     => $lease_database_port,
     },
   }
 
+  $host_database = $host_backend ? {
+    'postgresql' => {
+      'type'     => 'postgresql',
+      'name'     => $host_database_name,
+      'user'     => $host_database_user,
+      'password' => $host_sensitive_db_password,
+      'host'     => $host_database_host,
+      'port'     => $host_database_port,
+    },
+    default => undef,
+  }
+
+  $with_host_db = $host_database ? {
+    undef   => $base_server_params,
+    default => $base_server_params + { host_database => $host_database },
+  }
+
   $final_params = $dhcp_ddns ? {
-    undef   => $server_params,
-    default => $server_params + { dhcp_ddns => $dhcp_ddns },
+    undef   => $with_host_db,
+    default => $with_host_db + { dhcp_ddns => $dhcp_ddns },
   }
 
   kea_dhcp_v4_server { 'dhcp4':

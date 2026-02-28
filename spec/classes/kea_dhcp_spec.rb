@@ -36,7 +36,7 @@ describe 'kea_dhcp' do
 
       let(:params) do
         {
-          sensitive_db_password: RSpec::Puppet::RawString.new("Sensitive('kea_password')"),
+          lease_sensitive_db_password: RSpec::Puppet::RawString.new("Sensitive('kea_password')"),
         }
       end
 
@@ -251,6 +251,52 @@ describe 'kea_dhcp' do
         it { is_expected.not_to contain_class('kea_dhcp::install::postgresql') }
         it { is_expected.not_to contain_postgresql__server_instance('kea') }
         it { is_expected.not_to contain_exec('init_kea_dhcp_schema') }
+      end
+
+      context 'with host_backend postgresql' do
+        let(:params) do
+          super().merge(
+            host_backend: 'postgresql',
+            host_sensitive_db_password: RSpec::Puppet::RawString.new("Sensitive('host_password')"),
+            host_database_name: 'kea_hosts',
+            host_database_user: 'kea_hosts',
+            host_database_host: '127.0.0.1',
+            host_database_port: 5432,
+          )
+        end
+
+        it { is_expected.to compile.with_all_deps }
+
+        it 'includes libdhcp_host_cmds.so in hooks_libraries' do
+          hooks = catalogue.resource('Kea_dhcp_v4_server', 'dhcp4')[:hooks_libraries]
+          expect(hooks).to include({ 'library' => '/usr/lib64/kea/hooks/libdhcp_host_cmds.so' })
+        end
+
+        it 'passes host_database to the DHCPv4 server resource' do
+          host_database = catalogue.resource('Kea_dhcp_v4_server', 'dhcp4')[:host_database]
+          expect(host_database).to include(
+            'type' => 'postgresql',
+            'name' => 'kea_hosts',
+            'user' => 'kea_hosts',
+            'host' => '127.0.0.1',
+            'port' => 5432,
+          )
+          expect(host_database['password']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
+          expect(host_database['password'].unwrap).to eq('host_password')
+        end
+      end
+
+      context 'with host_backend json (default)' do
+        it 'does not include libdhcp_host_cmds.so in hooks_libraries' do
+          hooks = catalogue.resource('Kea_dhcp_v4_server', 'dhcp4')[:hooks_libraries]
+          host_cmds_lib = '/usr/lib64/kea/hooks/libdhcp_host_cmds.so'
+          expect(Array(hooks).map { |h| h['library'] }).not_to include(host_cmds_lib)
+        end
+
+        it 'does not pass host_database to the DHCPv4 server resource' do
+          host_database = catalogue.resource('Kea_dhcp_v4_server', 'dhcp4')[:host_database]
+          expect(host_database).to be_nil.or(be_empty)
+        end
       end
     end
   end

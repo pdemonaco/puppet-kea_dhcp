@@ -95,21 +95,6 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
     nil
   end
 
-  def self.find_subnet_for_ip(subnets, ip_address)
-    return nil unless ip_address
-
-    target_ip = IPAddr.new(ip_address)
-
-    subnets.each do |subnet|
-      next unless subnet['subnet']
-
-      subnet_cidr = IPAddr.new(subnet['subnet'])
-      return subnet if subnet_cidr.include?(target_ip)
-    end
-
-    nil
-  end
-
   def scope_id
     @property_hash[:scope_id]
   end

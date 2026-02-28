@@ -9,7 +9,7 @@ describe 'kea_dhcp::service' do
       let(:pre_condition) do
         <<-PUPPET
           class { 'kea_dhcp':
-            sensitive_db_password => Sensitive('test_password'),
+            lease_sensitive_db_password => Sensitive('test_password'),
           }
         PUPPET
       end

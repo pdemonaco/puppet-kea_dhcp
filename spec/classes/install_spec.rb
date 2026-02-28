@@ -11,7 +11,7 @@ describe 'kea_dhcp::install' do
         let(:pre_condition) do
           <<-PUPPET
             class { 'kea_dhcp':
-              sensitive_db_password => Sensitive('test_password'),
+              lease_sensitive_db_password => Sensitive('test_password'),
             }
           PUPPET
         end
@@ -45,7 +45,7 @@ describe 'kea_dhcp::install' do
         let(:pre_condition) do
           <<-PUPPET
             class { 'kea_dhcp':
-              sensitive_db_password      => Sensitive('test_password'),
+              lease_sensitive_db_password      => Sensitive('test_password'),
               lease_backend_install_mode => 'database',
             }
           PUPPET
@@ -63,7 +63,7 @@ describe 'kea_dhcp::install' do
         let(:pre_condition) do
           <<-PUPPET
             class { 'kea_dhcp':
-              sensitive_db_password      => Sensitive('test_password'),
+              lease_sensitive_db_password      => Sensitive('test_password'),
               lease_backend_install_mode => 'none',
             }
           PUPPET

@@ -50,7 +50,7 @@ describe 'kea_dhcp::install::postgresql' do
       instance_user: 'postgres',
       instance_group: 'postgres',
       install_mode: 'instance',
-      sensitive_db_password: RSpec::Puppet::RawString.new('Sensitive("supersecret")'),
+      lease_sensitive_db_password: RSpec::Puppet::RawString.new('Sensitive("supersecret")'),
     }
   end
 

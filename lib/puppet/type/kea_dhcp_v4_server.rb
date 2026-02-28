@@ -149,6 +149,60 @@ Puppet::Type.newtype(:kea_dhcp_v4_server) do
     private :unwrap_sensitive
   end
 
+  newproperty(:host_database) do
+    desc 'Host database configuration for storing reservations. Only postgresql is supported.'
+
+    validate do |value|
+      unless value.is_a?(Hash)
+        raise ArgumentError, 'Host database must be provided as a hash'
+      end
+
+      normalized = value.each_with_object({}) { |(k, v), acc| acc[k.to_s] = v }
+
+      unless normalized['type'] == 'postgresql'
+        raise ArgumentError, 'Only the postgresql host database backend is supported'
+      end
+
+      ['name', 'user', 'password', 'host', 'port'].each do |key|
+        raise ArgumentError, "Host database #{key} must be provided" unless normalized.key?(key)
+      end
+
+      begin
+        Integer(normalized['port'])
+      rescue ArgumentError, TypeError
+        raise ArgumentError, 'Host database port must be an integer'
+      end
+    end
+
+    def insync?(is)
+      stringify_keys(is || {}) == stringify_keys(should || {})
+    end
+
+    def munge(value)
+      normalized = stringify_keys(value)
+      normalized['port'] = Integer(normalized['port'])
+      normalized
+    end
+
+    def stringify_keys(hash)
+      return {} unless hash.respond_to?(:each)
+
+      hash.each_with_object({}) do |(key, val), acc|
+        acc[key.to_s] = unwrap_sensitive(val)
+      end
+    end
+    private :stringify_keys
+
+    def unwrap_sensitive(value)
+      if value.respond_to?(:unwrap)
+        value.unwrap
+      else
+        value
+      end
+    end
+    private :unwrap_sensitive
+  end
+
   newproperty(:interfaces_config) do
     desc 'Interface configuration controlling which interfaces the DHCPv4 server listens on.'
 
