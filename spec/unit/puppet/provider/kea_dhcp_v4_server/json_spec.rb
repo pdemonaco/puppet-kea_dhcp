@@ -156,6 +156,93 @@ describe provider_class do
       )
     end
 
+    it 'writes interfaces-config with default all-interfaces' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['interfaces-config']).to eq({ 'interfaces' => ['*'] })
+    end
+
+    it 'writes interfaces-config with explicit interfaces' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        interfaces_config: { 'interfaces' => ['enp5s0', 'enp6s0'] },
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['interfaces-config']).to eq({ 'interfaces' => ['enp5s0', 'enp6s0'] })
+    end
+
+    it 'writes interfaces-config with dhcp-socket-type' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        interfaces_config: { 'interfaces' => ['*'], 'dhcp-socket-type' => 'udp' },
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['interfaces-config']).to eq({ 'interfaces' => ['*'], 'dhcp-socket-type' => 'udp' })
+    end
+
+    it 'does not write interfaces-config key when empty' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        interfaces_config: {},
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('interfaces-config')
+    end
+
     it 'does not write dhcp-ddns key when empty' do
       write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
 
@@ -322,6 +409,37 @@ describe provider_class do
       config = read_config(config_path)
       expect(config['Dhcp4']).not_to have_key('hooks-libraries')
     end
+
+    it 'removes interfaces-config when destroying' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'lease-database' => lease_db,
+          'interfaces-config' => { 'interfaces' => ['enp5s0'] },
+        },
+      )
+
+      property_hash = {
+        ensure: :present,
+        name: 'dhcp4',
+        config_path: config_path,
+        interfaces_config: { 'interfaces' => ['enp5s0'] },
+        lease_database: lease_db,
+      }
+
+      resource = type_class.new(name: 'dhcp4', config_path: config_path, lease_database: lease_db)
+
+      provider = provider_class.new(property_hash)
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.destroy
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('interfaces-config')
+    end
   end
 
   describe '#exists?' do
@@ -402,6 +520,18 @@ describe provider_class do
       expect(instances[0].get(:hooks_libraries)).to eq([{ 'library' => '/usr/lib/kea/hooks/libdhcp_lease_cmds.so' }])
     end
 
+    it 'returns an instance when interfaces-config is present' do
+      write_config(
+        instances_config_path,
+        'Dhcp4' => { 'interfaces-config' => { 'interfaces' => ['enp5s0'] } },
+      )
+
+      instances = provider_class.instances
+
+      expect(instances.length).to eq(1)
+      expect(instances[0].get(:interfaces_config)).to eq({ 'interfaces' => ['enp5s0'] })
+    end
+
     it 'deep stringifies hooks_libraries parameters' do
       write_config(
         instances_config_path,
@@ -466,6 +596,10 @@ describe provider_class do
 
     it 'returns true when hooks-libraries key exists' do
       expect(provider_class.present?({ 'hooks-libraries' => [] })).to be true
+    end
+
+    it 'returns true when interfaces-config key exists' do
+      expect(provider_class.present?({ 'interfaces-config' => { 'interfaces' => ['*'] } })).to be true
     end
 
     it 'returns false when no server keys exist' do

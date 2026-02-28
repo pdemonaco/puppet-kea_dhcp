@@ -218,6 +218,94 @@ describe Puppet::Type.type(:kea_dhcp_v4_server) do
     end
   end
 
+  describe 'interfaces_config property' do
+    it 'defaults to listening on all interfaces' do
+      resource = described_class.new(name: 'dhcp4', lease_database: base_lease_db)
+
+      expect(resource[:interfaces_config]).to eq({ 'interfaces' => ['*'] })
+    end
+
+    it 'accepts explicit interface list' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        interfaces_config: { 'interfaces' => ['enp5s0', 'enp6s0'] },
+      )
+
+      expect(resource[:interfaces_config]).to eq({ 'interfaces' => ['enp5s0', 'enp6s0'] })
+    end
+
+    it 'accepts interfaces with IP address notation' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        interfaces_config: { 'interfaces' => ['enp5s0/10.0.0.15'] },
+      )
+
+      expect(resource[:interfaces_config]).to eq({ 'interfaces' => ['enp5s0/10.0.0.15'] })
+    end
+
+    it 'accepts dhcp-socket-type raw' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        interfaces_config: { 'interfaces' => ['*'], 'dhcp-socket-type' => 'raw' },
+      )
+
+      expect(resource[:interfaces_config]).to eq({ 'interfaces' => ['*'], 'dhcp-socket-type' => 'raw' })
+    end
+
+    it 'accepts dhcp-socket-type udp' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        interfaces_config: { 'interfaces' => ['*'], 'dhcp-socket-type' => 'udp' },
+      )
+
+      expect(resource[:interfaces_config]).to eq({ 'interfaces' => ['*'], 'dhcp-socket-type' => 'udp' })
+    end
+
+    it 'rejects non-hash values' do
+      expect {
+        described_class.new(
+          name: 'dhcp4',
+          lease_database: base_lease_db,
+          interfaces_config: 'eth0',
+        )
+      }.to raise_error(Puppet::ResourceError, %r{interfaces_config must be provided as a hash})
+    end
+
+    it 'rejects interfaces that are not an array of strings' do
+      expect {
+        described_class.new(
+          name: 'dhcp4',
+          lease_database: base_lease_db,
+          interfaces_config: { 'interfaces' => 'eth0' },
+        )
+      }.to raise_error(Puppet::ResourceError, %r{interfaces must be an array of strings})
+    end
+
+    it 'rejects invalid dhcp-socket-type' do
+      expect {
+        described_class.new(
+          name: 'dhcp4',
+          lease_database: base_lease_db,
+          interfaces_config: { 'interfaces' => ['*'], 'dhcp-socket-type' => 'packet' },
+        )
+      }.to raise_error(Puppet::ResourceError, %r{dhcp-socket-type must be one of: raw, udp})
+    end
+
+    it 'converts symbol keys to strings' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        interfaces_config: { interfaces: ['eth0'] },
+      )
+
+      expect(resource[:interfaces_config]).to eq({ 'interfaces' => ['eth0'] })
+    end
+  end
+
   describe 'dhcp_ddns property' do
     it 'accepts valid DHCP-DDNS configuration' do
       resource = described_class.new(

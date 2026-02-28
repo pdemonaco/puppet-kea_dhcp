@@ -23,6 +23,13 @@
 #   Might also contain other configuration information, depending on the
 #   mood of the developer.
 #
+# @param array_dhcp4_listen_interfaces
+#   List of interfaces the DHCPv4 server listens on. Use ['*'] for all interfaces.
+#   Entries may optionally include an IP address (e.g. 'eth0/10.0.0.1').
+#
+# @param dhcp4_socket_type
+#   Socket type used for DHCPv4 communication. Either 'raw' or 'udp'.
+#
 # @param array_dhcp4_server_options
 #   An array of additional options to include in the DHCPv4 server configuration.
 #   These options are treateds as the default options for all subnets managed by the server.
@@ -69,6 +76,8 @@
 #
 class kea_dhcp (
   Sensitive[String] $sensitive_db_password,
+  Array[String] $array_dhcp4_listen_interfaces = ['*'],
+  Optional[Enum['raw', 'udp']] $dhcp4_socket_type = undef,
   Array[Hash] $array_dhcp4_server_options = [],
   Optional[Hash] $dhcp_ddns = undef,
   Boolean $enable_dhcp4 = true,
