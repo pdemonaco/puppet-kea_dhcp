@@ -149,6 +149,48 @@ Puppet::Type.newtype(:kea_dhcp_v4_server) do
     private :unwrap_sensitive
   end
 
+  newproperty(:interfaces_config) do
+    desc 'Interface configuration controlling which interfaces the DHCPv4 server listens on.'
+
+    defaultto({ 'interfaces' => ['*'] })
+
+    validate do |value|
+      unless value.is_a?(Hash)
+        raise ArgumentError, 'interfaces_config must be provided as a hash'
+      end
+
+      normalized = value.each_with_object({}) { |(k, v), acc| acc[k.to_s] = v }
+
+      if normalized.key?('interfaces')
+        unless normalized['interfaces'].is_a?(Array) && normalized['interfaces'].all? { |i| i.is_a?(String) }
+          raise ArgumentError, 'interfaces must be an array of strings'
+        end
+      end
+
+      valid_socket_types = ['raw', 'udp']
+      if normalized.key?('dhcp-socket-type') && !valid_socket_types.include?(normalized['dhcp-socket-type'])
+        raise ArgumentError, "dhcp-socket-type must be one of: #{valid_socket_types.join(', ')}"
+      end
+    end
+
+    def insync?(is)
+      stringify_keys(is || {}) == stringify_keys(should || {})
+    end
+
+    def munge(value)
+      stringify_keys(value)
+    end
+
+    def stringify_keys(hash)
+      return {} unless hash.respond_to?(:each)
+
+      hash.each_with_object({}) do |(key, val), acc|
+        acc[key.to_s] = val
+      end
+    end
+    private :stringify_keys
+  end
+
   newproperty(:dhcp_ddns) do
     desc 'DHCP-DDNS connectivity and behavioral parameters.'
 
@@ -235,5 +277,12 @@ Puppet::Type.newtype(:kea_dhcp_v4_server) do
 
   autorequire(:file) do
     [self[:config_path]]
+  end
+
+  def generate
+    path = self[:config_path]
+    return [] if catalog.resource(:kea_dhcp_v4_commit, path)
+
+    [Puppet::Type.type(:kea_dhcp_v4_commit).new(name: path)]
   end
 end

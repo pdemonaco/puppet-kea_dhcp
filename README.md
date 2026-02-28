@@ -186,6 +186,61 @@ The provider automatically finds the correct subnet by matching the IP address a
 
 Uniqueness is enforced within each subnet - duplicate identifiers, IP addresses, or hostnames will be rejected.
 
+### Interface Configuration
+
+By default the DHCPv4 server listens on all available interfaces. Use `array_dhcp4_listen_interfaces` to restrict this to specific interfaces, and `dhcp4_socket_type` to control the socket type.
+
+#### Listen on all interfaces (default)
+
+```puppet
+class { 'kea_dhcp':
+  sensitive_db_password => Sensitive('SecurePassword123!'),
+}
+```
+
+This produces the following in `kea-dhcp4.conf`:
+
+```json
+"interfaces-config": {
+    "interfaces": [ "*" ]
+}
+```
+
+#### Listen on specific interfaces
+
+```puppet
+class { 'kea_dhcp':
+  sensitive_db_password          => Sensitive('SecurePassword123!'),
+  array_dhcp4_listen_interfaces  => ['enp5s0', 'enp6s0'],
+}
+```
+
+#### Bind to a specific IP address on an interface
+
+Kea accepts `interface/address` notation to bind to a single address on a multi-homed interface:
+
+```puppet
+class { 'kea_dhcp':
+  sensitive_db_password          => Sensitive('SecurePassword123!'),
+  array_dhcp4_listen_interfaces  => [
+    'enp5s0/10.0.0.15',
+    'enp6s0/10.10.0.15',
+  ],
+}
+```
+
+#### Set the socket type
+
+Use `dhcp4_socket_type` to choose between raw and UDP sockets. Raw sockets are the default in Kea and handle traffic before the OS network stack; UDP sockets are useful when a relay agent is present:
+
+```puppet
+class { 'kea_dhcp':
+  sensitive_db_password          => Sensitive('SecurePassword123!'),
+  array_dhcp4_listen_interfaces  => ['enp5s0'],
+  dhcp4_socket_type              => 'udp',
+}
+```
+
 ### Dynamic DNS (DDNS)
 
 The module supports Kea's DHCP-DDNS integration, allowing automatic DNS updates when leases are assigned or released.
@@ -326,6 +381,9 @@ The DDNS server configuration is managed centrally through the `kea_dhcp` class.
 ---
 kea_dhcp::sensitive_db_password: ENC[PKCS7,...]
 kea_dhcp::lease_backend_install_mode: 'instance'
+kea_dhcp::array_dhcp4_listen_interfaces:
+  - 'enp5s0'
+  - 'enp6s0'
 kea_dhcp::array_dhcp4_server_options:
   - name: 'domain-name-servers'
     data: '8.8.8.8, 8.8.4.4'

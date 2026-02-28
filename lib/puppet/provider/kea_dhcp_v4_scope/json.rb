@@ -115,6 +115,12 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
   def flush
     return if @property_flush.empty? && @property_hash.empty?
 
+    Puppet.debug do
+      "kea_dhcp_v4_scope[#{resource[:name]}]: subnet=#{value_for(:subnet).inspect} " \
+        "id=#{value_for(:id).inspect} pools=#{value_for(:pools).inspect} " \
+        "options=#{value_for(:options).inspect}"
+    end
+
     config = self.class.config_for(config_path)
     config[self.class::DHCP4_KEY] ||= {}
     config[self.class::DHCP4_KEY][self.class::SUBNET4_KEY] ||= []
@@ -190,9 +196,5 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
 
     baseline = subnets.map { |s| s['id'] }.compact.max || 0
     baseline + 1
-  end
-
-  def self.post_resource_eval
-    commit_uncontrolled!
   end
 end

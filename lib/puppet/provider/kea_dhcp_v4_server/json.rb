@@ -36,7 +36,11 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
   end
 
   def self.present?(server_section)
-    server_section.key?(self::LEASE_DATABASE_KEY) || server_section.key?(self::OPTION_DATA_KEY) || server_section.key?(self::HOOKS_LIBRARIES_KEY) || server_section.key?('dhcp-ddns')
+    server_section.key?(self::LEASE_DATABASE_KEY) ||
+      server_section.key?(self::OPTION_DATA_KEY) ||
+      server_section.key?(self::HOOKS_LIBRARIES_KEY) ||
+      server_section.key?('dhcp-ddns') ||
+      server_section.key?('interfaces-config')
   end
 
   def self.resource_hash(server_section, path)
@@ -47,6 +51,7 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       hooks_libraries: Array(server_section[self::HOOKS_LIBRARIES_KEY]).map { |hook| deep_stringify_keys(hook) },
       lease_database: stringify_keys(server_section[self::LEASE_DATABASE_KEY]),
       dhcp_ddns: stringify_keys(server_section['dhcp-ddns']),
+      interfaces_config: stringify_keys(server_section['interfaces-config']),
       config_path: path,
     }
   end
@@ -91,12 +96,21 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
     @property_flush[:dhcp_ddns] = value
   end
 
+  def interfaces_config
+    @property_hash[:interfaces_config]
+  end
+
+  def interfaces_config=(value)
+    @property_flush[:interfaces_config] = value
+  end
+
   def create
     @property_flush[:ensure] = :present
     @property_flush[:options] = resource[:options] || []
     @property_flush[:hooks_libraries] = resource[:hooks_libraries] || []
     @property_flush[:lease_database] = resource[:lease_database] || {}
     @property_flush[:dhcp_ddns] = resource[:dhcp_ddns] || {}
+    @property_flush[:interfaces_config] = resource[:interfaces_config] || { 'interfaces' => ['*'] }
   end
 
   def destroy
@@ -110,6 +124,15 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
   def flush
     return if @property_flush.empty? && @property_hash.empty?
 
+    Puppet.debug do
+      lease_db = (value_for(:lease_database) || {}).dup
+      lease_db['password'] = '[REDACTED]' if lease_db.key?('password')
+      "kea_dhcp_v4_server[#{resource[:name]}]: lease_database=#{lease_db.inspect} " \
+        "options=#{value_for(:options).inspect} hooks_libraries=#{value_for(:hooks_libraries).inspect} " \
+        "dhcp_ddns=#{value_for(:dhcp_ddns).inspect} " \
+        "interfaces_config=#{value_for(:interfaces_config).inspect}"
+    end
+
     config = self.class.config_for(config_path)
     config[self.class::DHCP4_KEY] ||= {}
     dhcp4 = config[self.class::DHCP4_KEY]
@@ -119,6 +142,7 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       dhcp4.delete(self.class::HOOKS_LIBRARIES_KEY)
       dhcp4.delete(self.class::LEASE_DATABASE_KEY)
       dhcp4.delete('dhcp-ddns')
+      dhcp4.delete('interfaces-config')
       ensure_state = :absent
     else
       dhcp4[self.class::OPTION_DATA_KEY] = Array(value_for(:options)).map { |opt| stringify_keys(opt) }
@@ -128,6 +152,8 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       dhcp4[self.class::LEASE_DATABASE_KEY] = lease_db unless lease_db.empty?
       ddns_config = stringify_keys(value_for(:dhcp_ddns))
       dhcp4['dhcp-ddns'] = ddns_config unless ddns_config.empty?
+      interfaces_cfg = stringify_keys(value_for(:interfaces_config))
+      dhcp4['interfaces-config'] = interfaces_cfg unless interfaces_cfg.empty?
       ensure_state = :present
     end
 
@@ -151,7 +177,7 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
 
     if [:options, :hooks_libraries].include?(key) && value.nil?
       []
-    elsif [:lease_database, :dhcp_ddns].include?(key) && value.nil?
+    elsif [:lease_database, :dhcp_ddns, :interfaces_config].include?(key) && value.nil?
       {}
     else
       value
@@ -169,12 +195,6 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
   def config_path
     path = super
     self.class.server_config_path = path
-    self.class.register_commit_controller(path)
     path
-  end
-
-  def self.post_resource_eval
-    commit_all!
-    unregister_commit_controller(server_config_path) if server_config_path
   end
 end

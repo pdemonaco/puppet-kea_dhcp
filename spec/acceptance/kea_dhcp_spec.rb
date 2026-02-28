@@ -67,6 +67,93 @@ describe 'kea_dhcp class on Rocky' do
     end
   end
 
+  describe 'interface configuration' do
+    before(:all) do
+      reset_kea_configs
+    end
+
+    after(:all) do
+      reset_kea_configs
+    end
+
+    context 'with default interface configuration' do
+      let(:manifest) do
+        <<~PP
+          class { 'kea_dhcp':
+            sensitive_db_password      => Sensitive('LitmusP@ssw0rd!'),
+            enable_ddns                => false,
+            enable_ctrl_agent          => false,
+          }
+        PP
+      end
+
+      it 'applies the manifest idempotently' do
+        apply_manifest(manifest, catch_failures: true)
+        apply_manifest(manifest, catch_changes: true)
+      end
+
+      it 'writes interfaces-config listening on all interfaces' do
+        config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp4.conf').stdout)
+        interfaces_config = config.dig('Dhcp4', 'interfaces-config')
+
+        expect(interfaces_config).not_to be_nil
+        expect(interfaces_config['interfaces']).to eq(['*'])
+        expect(interfaces_config).not_to have_key('dhcp-socket-type')
+      end
+    end
+
+    context 'with explicit interface list' do
+      let(:manifest) do
+        <<~PP
+          class { 'kea_dhcp':
+            sensitive_db_password         => Sensitive('LitmusP@ssw0rd!'),
+            enable_ddns                   => false,
+            enable_ctrl_agent             => false,
+            array_dhcp4_listen_interfaces => ['lo'],
+          }
+        PP
+      end
+
+      it 'applies the manifest idempotently' do
+        apply_manifest(manifest, catch_failures: true)
+        apply_manifest(manifest, catch_changes: true)
+      end
+
+      it 'writes the specified interfaces to the config' do
+        config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp4.conf').stdout)
+        interfaces_config = config.dig('Dhcp4', 'interfaces-config')
+
+        expect(interfaces_config['interfaces']).to eq(['lo'])
+      end
+    end
+
+    context 'with dhcp-socket-type set to udp' do
+      let(:manifest) do
+        <<~PP
+          class { 'kea_dhcp':
+            sensitive_db_password      => Sensitive('LitmusP@ssw0rd!'),
+            enable_ddns                => false,
+            enable_ctrl_agent          => false,
+            dhcp4_socket_type          => 'udp',
+          }
+        PP
+      end
+
+      it 'applies the manifest idempotently' do
+        apply_manifest(manifest, catch_failures: true)
+        apply_manifest(manifest, catch_changes: true)
+      end
+
+      it 'writes dhcp-socket-type to the interfaces-config' do
+        config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp4.conf').stdout)
+        interfaces_config = config.dig('Dhcp4', 'interfaces-config')
+
+        expect(interfaces_config['interfaces']).to eq(['*'])
+        expect(interfaces_config['dhcp-socket-type']).to eq('udp')
+      end
+    end
+  end
+
   describe 'DDNS integration' do
     let(:db_password) { 'LitmusP@ssw0rd!' }
     let(:manifest) do
@@ -178,6 +265,31 @@ describe 'kea_dhcp class on Rocky' do
     end
   end
 
+  describe 'invalid server options' do
+    before(:all) do
+      reset_kea_configs
+    end
+
+    let(:manifest) do
+      <<~PP
+        class { 'kea_dhcp':
+          sensitive_db_password      => Sensitive('LitmusP@ssw0rd!'),
+          array_dhcp4_server_options => [
+            { 'name' => 'time-servers', 'data' => 'not-an-ip-address' },
+          ],
+          enable_ddns                => false,
+          enable_ctrl_agent          => false,
+        }
+      PP
+    end
+
+    it 'prints kea errors when validation fails' do
+      result = apply_manifest(manifest, catch_failures: false)
+      expect(result.stderr).to match(%r{Kea_dhcp_v4_commit\[/etc/kea/kea-dhcp4\.conf\]})
+      expect(result.stderr).to match(%r{ERROR \[kea-dhcp4})
+    end
+  end
+
   describe 'database mode installation' do
     before(:all) do
       reset_kea_configs
@@ -211,7 +323,7 @@ describe 'kea_dhcp class on Rocky' do
     end
 
     it 'initializes the Kea schema in the default PostgreSQL instance' do
-      result = run_shell("su - postgres -c \"psql -p 5432 -d kea -tAc \\\"SELECT 1 FROM schema_version;\\\"\"")
+      result = run_shell('su - postgres -c "psql -p 5432 -d kea -tAc \"SELECT 1 FROM schema_version;\""')
       expect(result.stdout).to match(%r{1})
     end
 

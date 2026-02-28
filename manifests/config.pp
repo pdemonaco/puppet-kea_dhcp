@@ -15,6 +15,12 @@
 # @param lease_database_port
 #   Port number of the PostgreSQL server
 #
+# @param listen_interfaces
+#   List of interfaces the DHCPv4 server listens on.
+#
+# @param dhcp4_socket_type
+#   Socket type for DHCPv4 communication ('raw' or 'udp').
+#
 # @param server_options
 #   Array of additional options to include in the DHCPv4 server configuration.
 #
@@ -53,6 +59,8 @@ class kea_dhcp::config (
   String $lease_database_user = $kea_dhcp::lease_database_user,
   Stdlib::Host $lease_database_host = $kea_dhcp::lease_database_host,
   Integer $lease_database_port = $kea_dhcp::lease_database_port,
+  Array[String] $listen_interfaces = $kea_dhcp::array_dhcp4_listen_interfaces,
+  Optional[Enum['raw', 'udp']] $dhcp4_socket_type = $kea_dhcp::dhcp4_socket_type,
   Array[Hash] $server_options = $kea_dhcp::array_dhcp4_server_options,
   Optional[Hash] $dhcp_ddns = $kea_dhcp::dhcp_ddns,
   Sensitive[String] $sensitive_db_password = $kea_dhcp::sensitive_db_password,
@@ -70,12 +78,19 @@ class kea_dhcp::config (
     default      => [],
   }
 
+  $base_interfaces_config = { 'interfaces' => $listen_interfaces }
+  $interfaces_config = $dhcp4_socket_type ? {
+    undef   => $base_interfaces_config,
+    default => $base_interfaces_config + { 'dhcp-socket-type' => $dhcp4_socket_type },
+  }
+
   $server_params = {
-    ensure          => present,
-    config_path     => $config_path,
-    options         => $server_options,
-    hooks_libraries => $hooks_libraries,
-    lease_database  => {
+    ensure            => present,
+    config_path       => $config_path,
+    options           => $server_options,
+    hooks_libraries   => $hooks_libraries,
+    interfaces_config => $interfaces_config,
+    lease_database    => {
       'type'     => 'postgresql',
       'name'     => $lease_database_name,
       'user'     => $lease_database_user,

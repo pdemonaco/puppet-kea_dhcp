@@ -170,6 +170,12 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
   def flush
     return if @property_flush.empty? && @property_hash.empty?
 
+    Puppet.debug do
+      "kea_dhcp_v4_reservation[#{resource[:name]}]: scope_id=#{value_for(:scope_id).inspect} " \
+        "identifier_type=#{value_for(:identifier_type).inspect} identifier=#{value_for(:identifier).inspect} " \
+        "ip_address=#{value_for(:ip_address).inspect} hostname=#{value_for(:hostname).inspect}"
+    end
+
     config = self.class.config_for(config_path)
     config[self.class::DHCP4_KEY] ||= {}
     config[self.class::DHCP4_KEY][self.class::SUBNET4_KEY] ||= []
@@ -292,9 +298,5 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
         raise Puppet::Error, "Reservation with hostname '#{hostname}' already exists in subnet #{subnet_id} (#{subnet_cidr})"
       end
     end
-  end
-
-  def self.post_resource_eval
-    commit_uncontrolled!
   end
 end

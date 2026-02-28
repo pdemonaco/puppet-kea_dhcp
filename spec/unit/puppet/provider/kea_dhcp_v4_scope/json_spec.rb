@@ -14,7 +14,8 @@ describe provider_class do
   before(:each) do
     tempfile.close
     provider_class.clear_state!
-    allow(Puppet::Util::Execution).to receive(:execute).and_return('')
+    execution_result = double('execution_result', exitstatus: 0, to_s: '')
+    allow(Puppet::Util::Execution).to receive(:execute).and_return(execution_result)
   end
 
   after(:each) do
@@ -71,7 +72,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       scope = config['Dhcp4']['subnet4'].first
@@ -96,7 +97,7 @@ describe provider_class do
 
       provider.create
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       ids = config['Dhcp4']['subnet4'].map { |scope| scope['id'] }
@@ -144,7 +145,7 @@ describe provider_class do
       provider.subnet = '198.51.100.0/24'
       provider.pools = ['198.51.100.10 - 198.51.100.20']
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       scope = config['Dhcp4']['subnet4'].first
@@ -190,7 +191,7 @@ describe provider_class do
 
       provider.destroy
       provider.flush
-      provider_class.commit_uncontrolled!
+      provider_class.commit_all!
 
       config = JSON.parse(File.read(config_path))
       expect(config['Dhcp4']['subnet4']).to be_empty

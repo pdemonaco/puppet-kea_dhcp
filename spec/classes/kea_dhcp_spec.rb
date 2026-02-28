@@ -65,6 +65,7 @@ describe 'kea_dhcp' do
           'ensure' => 'present',
           'config_path' => '/etc/kea/kea-dhcp4.conf',
           'options' => [],
+          'interfaces_config' => { 'interfaces' => ['*'] },
         )
 
         lease_database = catalogue.resource('Kea_dhcp_v4_server', 'dhcp4')[:lease_database]
@@ -78,6 +79,30 @@ describe 'kea_dhcp' do
         )
         expect(lease_database['password']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
         expect(lease_database['password'].unwrap).to eq('kea_password')
+      end
+
+      context 'with explicit listen interfaces' do
+        let(:params) do
+          super().merge(array_dhcp4_listen_interfaces: ['enp5s0', 'enp6s0'])
+        end
+
+        it 'passes interfaces to the DHCPv4 server resource' do
+          is_expected.to contain_kea_dhcp_v4_server('dhcp4').with(
+            'interfaces_config' => { 'interfaces' => ['enp5s0', 'enp6s0'] },
+          )
+        end
+      end
+
+      context 'with dhcp4_socket_type set' do
+        let(:params) do
+          super().merge(dhcp4_socket_type: 'udp')
+        end
+
+        it 'includes dhcp-socket-type in interfaces_config' do
+          is_expected.to contain_kea_dhcp_v4_server('dhcp4').with(
+            'interfaces_config' => { 'interfaces' => ['*'], 'dhcp-socket-type' => 'udp' },
+          )
+        end
       end
 
       context 'with DDNS enabled' do

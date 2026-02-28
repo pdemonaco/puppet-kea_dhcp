@@ -127,6 +127,12 @@ Puppet::Type.type(:kea_ddns_domain).provide(:json, parent: PuppetX::KeaDhcp::Pro
   def flush
     return if @property_flush.empty? && @property_hash.empty?
 
+    Puppet.debug do
+      "kea_ddns_domain[#{resource[:name]}]: direction=#{value_for(:direction).inspect} " \
+        "domain_name=#{value_for(:domain_name).inspect} key_name=#{value_for(:key_name).inspect} " \
+        "dns_servers=#{value_for(:dns_servers).inspect}"
+    end
+
     config = self.class.config_for(config_path)
     config[self.class::DDNS_KEY] ||= { FORWARD_DDNS_KEY => {}, REVERSE_DDNS_KEY => {} }
     ddns = config[self.class::DDNS_KEY]
@@ -217,9 +223,5 @@ Puppet::Type.type(:kea_ddns_domain).provide(:json, parent: PuppetX::KeaDhcp::Pro
 
   def config_path
     resource[:config_path] || self.class::DEFAULT_CONFIG_PATH
-  end
-
-  def self.post_resource_eval
-    commit_uncontrolled!
   end
 end

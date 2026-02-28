@@ -221,6 +221,61 @@ describe 'kea_dhcp_v4_reservation provider' do
     end
   end
 
+  context 'when the generated configuration is invalid' do
+    let(:valid_config) do
+      <<~JSON
+        {
+          "Dhcp4": {
+            "valid-lifetime": 3600,
+            "subnet4": [
+              {
+                "id": 1,
+                "subnet": "192.0.2.0/24",
+                "pools": [{"pool": "192.0.2.10 - 192.0.2.200"}]
+              }
+            ],
+            "option-data": [
+              {
+                "name": "time-servers",
+                "data": "not-an-ip-address"
+              }
+            ]
+          }
+        }
+      JSON
+    end
+
+    before(:each) do
+      run_shell("cp #{config_path} #{config_path}.invalid_test_bak 2>/dev/null || true")
+      run_shell("cat <<'JSON' > #{config_path}\n#{valid_config}\nJSON")
+    end
+
+    after(:each) do
+      run_shell("mv #{config_path}.invalid_test_bak #{config_path} 2>/dev/null || true")
+    end
+
+    it 'prints kea errors and preserves the original config when validation fails' do
+      checksum_before = run_shell("md5sum #{config_path}").stdout.split.first
+
+      manifest = <<~PP
+        kea_dhcp_v4_reservation { 'trigger-validation':
+          ensure          => present,
+          identifier_type => 'hw-address',
+          identifier      => 'aa:bb:cc:dd:ee:ff',
+          ip_address      => '192.0.2.150',
+          config_path     => '#{config_path}',
+        }
+      PP
+
+      result = apply_manifest(manifest, catch_failures: false)
+      expect(result.stderr).to match(%r{Kea_dhcp_v4_commit\[#{Regexp.escape(config_path)}\]})
+      expect(result.stderr).to match(%r{ERROR \[kea-dhcp4})
+
+      checksum_after = run_shell("md5sum #{config_path}").stdout.split.first
+      expect(checksum_after).to eq(checksum_before)
+    end
+  end
+
   context 'when the configuration preserves unmanaged data' do
     it 'keeps other subnet properties intact' do
       scope_manifest = <<~PP

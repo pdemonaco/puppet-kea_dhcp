@@ -125,6 +125,13 @@ Puppet::Type.type(:kea_ddns_server).provide(:json, parent: PuppetX::KeaDhcp::Pro
   def flush
     return if @property_flush.empty? && @property_hash.empty?
 
+    Puppet.debug do
+      tsig = Array(value_for(:tsig_keys)).map { |k| k.dup.tap { |h| h['secret'] = '[REDACTED]' if h.key?('secret') } }
+      "kea_ddns_server[#{resource[:name]}]: ip_address=#{value_for(:ip_address).inspect} " \
+        "port=#{value_for(:port).inspect} ncr_protocol=#{value_for(:ncr_protocol).inspect} " \
+        "ncr_format=#{value_for(:ncr_format).inspect} tsig_keys=#{tsig.inspect}"
+    end
+
     config = self.class.config_for(config_path)
     config[self.class::DDNS_KEY] ||= { 'forward-ddns' => {}, 'reverse-ddns' => {} }
     ddns = config[self.class::DDNS_KEY]
@@ -179,12 +186,6 @@ Puppet::Type.type(:kea_ddns_server).provide(:json, parent: PuppetX::KeaDhcp::Pro
   def config_path
     path = resource[:config_path] || self.class::DEFAULT_CONFIG_PATH
     self.class.server_config_path = path
-    self.class.register_commit_controller(path)
     path
-  end
-
-  def self.post_resource_eval
-    commit_all!
-    unregister_commit_controller(server_config_path) if server_config_path
   end
 end

@@ -105,4 +105,11 @@ Puppet::Type.newtype(:kea_dhcp_v4_reservation) do
     raise ArgumentError, 'identifier is required' if self[:identifier].nil?
     raise ArgumentError, 'ip_address is required' if self[:ip_address].nil?
   end
+
+  def generate
+    path = self[:config_path]
+    return [] if catalog.resource(:kea_dhcp_v4_commit, path)
+
+    [Puppet::Type.type(:kea_dhcp_v4_commit).new(name: path)]
+  end
 end

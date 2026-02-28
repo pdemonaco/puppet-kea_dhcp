@@ -15,8 +15,10 @@
 
 ### Resource types
 
+* [`kea_ddns_commit`](#kea_ddns_commit): Commits staged Kea DHCP-DDNS configuration changes to disk.
 * [`kea_ddns_domain`](#kea_ddns_domain): Manages Kea DHCP-DDNS domain configurations (forward or reverse).
 * [`kea_ddns_server`](#kea_ddns_server): Manages Kea DHCP-DDNS server level configuration.
+* [`kea_dhcp_v4_commit`](#kea_dhcp_v4_commit)
 * [`kea_dhcp_v4_reservation`](#kea_dhcp_v4_reservation): Manages DHCPv4 host reservations within a subnet in the Kea kea-dhcp4.json configuration file.
 * [`kea_dhcp_v4_scope`](#kea_dhcp_v4_scope): Manages DHCPv4 subnets within the Kea kea-dhcp4.json configuration file.
 * [`kea_dhcp_v4_server`](#kea_dhcp_v4_server): Manages Kea DHCPv4 server level configuration.
@@ -46,6 +48,8 @@ The following parameters are available in the `kea_dhcp` class:
 * [`enable_ddns`](#-kea_dhcp--enable_ddns)
 * [`enable_ctrl_agent`](#-kea_dhcp--enable_ctrl_agent)
 * [`backend`](#-kea_dhcp--backend)
+* [`array_dhcp4_listen_interfaces`](#-kea_dhcp--array_dhcp4_listen_interfaces)
+* [`dhcp4_socket_type`](#-kea_dhcp--dhcp4_socket_type)
 * [`array_dhcp4_server_options`](#-kea_dhcp--array_dhcp4_server_options)
 * [`dhcp_ddns`](#-kea_dhcp--dhcp_ddns)
 * [`ddns_ip_address`](#-kea_dhcp--ddns_ip_address)
@@ -110,6 +114,23 @@ Might also contain other configuration information, depending on the
 mood of the developer.
 
 Default value: `'postgresql'`
+
+##### <a name="-kea_dhcp--array_dhcp4_listen_interfaces"></a>`array_dhcp4_listen_interfaces`
+
+Data type: `Array[String]`
+
+List of interfaces the DHCPv4 server listens on. Use ['*'] for all interfaces.
+Entries may optionally include an IP address (e.g. 'eth0/10.0.0.1').
+
+Default value: `['*']`
+
+##### <a name="-kea_dhcp--dhcp4_socket_type"></a>`dhcp4_socket_type`
+
+Data type: `Optional[Enum['raw', 'udp']]`
+
+Socket type used for DHCPv4 communication. Either 'raw' or 'udp'.
+
+Default value: `undef`
 
 ##### <a name="-kea_dhcp--array_dhcp4_server_options"></a>`array_dhcp4_server_options`
 
@@ -233,6 +254,8 @@ The following parameters are available in the `kea_dhcp::config` class:
 * [`lease_database_user`](#-kea_dhcp--config--lease_database_user)
 * [`lease_database_host`](#-kea_dhcp--config--lease_database_host)
 * [`lease_database_port`](#-kea_dhcp--config--lease_database_port)
+* [`listen_interfaces`](#-kea_dhcp--config--listen_interfaces)
+* [`dhcp4_socket_type`](#-kea_dhcp--config--dhcp4_socket_type)
 * [`server_options`](#-kea_dhcp--config--server_options)
 * [`sensitive_db_password`](#-kea_dhcp--config--sensitive_db_password)
 * [`dhcp_ddns`](#-kea_dhcp--config--dhcp_ddns)
@@ -284,6 +307,22 @@ Data type: `Integer`
 Port number of the PostgreSQL server
 
 Default value: `$kea_dhcp::lease_database_port`
+
+##### <a name="-kea_dhcp--config--listen_interfaces"></a>`listen_interfaces`
+
+Data type: `Array[String]`
+
+List of interfaces the DHCPv4 server listens on.
+
+Default value: `$kea_dhcp::array_dhcp4_listen_interfaces`
+
+##### <a name="-kea_dhcp--config--dhcp4_socket_type"></a>`dhcp4_socket_type`
+
+Data type: `Optional[Enum['raw', 'udp']]`
+
+Socket type for DHCPv4 communication ('raw' or 'udp').
+
+Default value: `$kea_dhcp::dhcp4_socket_type`
 
 ##### <a name="-kea_dhcp--config--server_options"></a>`server_options`
 
@@ -563,6 +602,38 @@ The name of the kea-dhcp-ddns service for this OS.
 
 ## Resource types
 
+### <a name="kea_ddns_commit"></a>`kea_ddns_commit`
+
+Commits staged Kea DHCP-DDNS configuration changes to disk.
+
+#### Properties
+
+The following properties are available in the `kea_ddns_commit` type.
+
+##### `applied`
+
+Whether staged changes have been applied. Managed automatically.
+
+Default value: `committed`
+
+#### Parameters
+
+The following parameters are available in the `kea_ddns_commit` type.
+
+* [`name`](#-kea_ddns_commit--name)
+* [`provider`](#-kea_ddns_commit--provider)
+
+##### <a name="-kea_ddns_commit--name"></a>`name`
+
+namevar
+
+Path to the kea-dhcp-ddns configuration file being committed.
+
+##### <a name="-kea_ddns_commit--provider"></a>`provider`
+
+The specific backend to use for this `kea_ddns_commit` resource. You will seldom need to specify this --- Puppet will
+usually discover the appropriate provider for your platform.
+
 ### <a name="kea_ddns_domain"></a>`kea_ddns_domain`
 
 Manages Kea DHCP-DDNS domain configurations (forward or reverse).
@@ -698,6 +769,38 @@ The unique identifier for the DHCP-DDNS server configuration. Must be dhcp-ddns.
 ##### <a name="-kea_ddns_server--provider"></a>`provider`
 
 The specific backend to use for this `kea_ddns_server` resource. You will seldom need to specify this --- Puppet will
+usually discover the appropriate provider for your platform.
+
+### <a name="kea_dhcp_v4_commit"></a>`kea_dhcp_v4_commit`
+
+The kea_dhcp_v4_commit type.
+
+#### Properties
+
+The following properties are available in the `kea_dhcp_v4_commit` type.
+
+##### `applied`
+
+Internal: tracks whether pending configuration changes have been committed.
+
+Default value: `committed`
+
+#### Parameters
+
+The following parameters are available in the `kea_dhcp_v4_commit` type.
+
+* [`name`](#-kea_dhcp_v4_commit--name)
+* [`provider`](#-kea_dhcp_v4_commit--provider)
+
+##### <a name="-kea_dhcp_v4_commit--name"></a>`name`
+
+namevar
+
+Path to the kea-dhcp4 configuration file being committed.
+
+##### <a name="-kea_dhcp_v4_commit--provider"></a>`provider`
+
+The specific backend to use for this `kea_dhcp_v4_commit` resource. You will seldom need to specify this --- Puppet will
 usually discover the appropriate provider for your platform.
 
 ### <a name="kea_dhcp_v4_reservation"></a>`kea_dhcp_v4_reservation`
@@ -851,6 +954,12 @@ Default value: `present`
 Array of hooks library configurations. Each element is a hash with at least a library key.
 
 Default value: `[]`
+
+##### `interfaces_config`
+
+Interface configuration controlling which interfaces the DHCPv4 server listens on.
+
+Default value: `{ 'interfaces' => ['*'] }`
 
 ##### `lease_database`
 

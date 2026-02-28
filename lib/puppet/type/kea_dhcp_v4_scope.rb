@@ -92,4 +92,11 @@ Puppet::Type.newtype(:kea_dhcp_v4_scope) do
 
     raise ArgumentError, 'Subnet is a required property' if self[:subnet].nil?
   end
+
+  def generate
+    path = self[:config_path]
+    return [] if catalog.resource(:kea_dhcp_v4_commit, path)
+
+    [Puppet::Type.type(:kea_dhcp_v4_commit).new(name: path)]
+  end
 end
