@@ -152,6 +152,8 @@ class PuppetX::KeaDhcp::Provider::DdnsJson < Puppet::Provider
 
   def self.commit_all!
     dirty_paths.to_a.each { |path| commit!(path) }
+  ensure
+    cleanup_temp_configs
   end
 
   def self.stringify_keys(hash)

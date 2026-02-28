@@ -78,6 +78,58 @@ describe 'kea_dhcp_v4_commit provider' do
     end
   end
 
+  context 'when verifying temp directory cleanup' do
+    before(:each) do
+      run_shell("rm -f #{config_path}")
+      run_shell("find /tmp -maxdepth 1 -name 'kea-dhcp4*' -type d -exec rm -rf {} + 2>/dev/null; true")
+    end
+
+    it 'leaves no temp directories after a successful commit' do
+      manifest = <<~PP
+        kea_dhcp_v4_scope { 'cleanup-test':
+          ensure      => present,
+          subnet      => '10.1.0.0/24',
+          pools       => ['10.1.0.10 - 10.1.0.200'],
+          config_path => '#{config_path}',
+        }
+      PP
+
+      apply_manifest(manifest, catch_failures: true)
+
+      temp_count = run_shell("find /tmp -maxdepth 1 -name 'kea-dhcp4*' -type d 2>/dev/null | wc -l").stdout.strip.to_i
+      expect(temp_count).to eq(0)
+    end
+
+    it 'leaves no temp directories after a failed validation' do
+      # Seed a valid initial config so there is something to commit on top of
+      seed_manifest = <<~PP
+        kea_dhcp_v4_scope { 'initial-scope':
+          ensure      => present,
+          subnet      => '10.1.0.0/24',
+          pools       => ['10.1.0.10 - 10.1.0.200'],
+          config_path => '#{config_path}',
+        }
+      PP
+      apply_manifest(seed_manifest, catch_failures: true)
+      run_shell("find /tmp -maxdepth 1 -name 'kea-dhcp4*' -type d -exec rm -rf {} + 2>/dev/null; true")
+
+      # Pools outside the declared subnet trigger kea-dhcp4 validation failure
+      invalid_manifest = <<~PP
+        kea_dhcp_v4_scope { 'invalid-scope':
+          ensure      => present,
+          subnet      => '192.0.2.0/24',
+          pools       => ['198.51.100.10 - 198.51.100.200'],
+          config_path => '#{config_path}',
+        }
+      PP
+
+      apply_manifest(invalid_manifest, catch_failures: false)
+
+      temp_count = run_shell("find /tmp -maxdepth 1 -name 'kea-dhcp4*' -type d 2>/dev/null | wc -l").stdout.strip.to_i
+      expect(temp_count).to eq(0)
+    end
+  end
+
   context 'when the generated configuration is invalid' do
     let(:valid_config) do
       <<~JSON

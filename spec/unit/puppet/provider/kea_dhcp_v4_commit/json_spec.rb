@@ -81,5 +81,54 @@ describe provider_class do
 
       expect(File.read(config_path)).to eq(original)
     end
+
+    it 'removes the temp directory after a successful commit' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      scope_provider_class = Puppet::Type.type(:kea_dhcp_v4_scope).provider(:json)
+      config = provider_class.config_for(config_path)
+      config['Dhcp4']['subnet4'] << { 'id' => 1, 'subnet' => '192.0.2.0/24' }
+      scope_provider_class.mark_dirty(config_path)
+
+      captured_dir = nil
+      allow(Dir).to receive(:mktmpdir).and_wrap_original do |orig, *args|
+        dir = orig.call(*args)
+        captured_dir = dir
+        dir
+      end
+
+      resource = type_class.new(name: config_path)
+      provider = provider_class.new
+      provider.resource = resource
+
+      provider.flush
+
+      expect(Dir.exist?(captured_dir)).to be false
+    end
+
+    it 'removes the temp directory after a failed validation' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      scope_provider_class = Puppet::Type.type(:kea_dhcp_v4_scope).provider(:json)
+      scope_provider_class.mark_dirty(config_path)
+
+      failing_result = double('execution_result', exitstatus: 1, to_s: '')
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(failing_result)
+
+      captured_dir = nil
+      allow(Dir).to receive(:mktmpdir).and_wrap_original do |orig, *args|
+        dir = orig.call(*args)
+        captured_dir = dir
+        dir
+      end
+
+      resource = type_class.new(name: config_path)
+      provider = provider_class.new
+      provider.resource = resource
+
+      expect { provider.flush }.to raise_error(Puppet::Error)
+
+      expect(Dir.exist?(captured_dir)).to be false
+    end
   end
 end
