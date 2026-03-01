@@ -18,7 +18,7 @@
 * [`kea_ddns_commit`](#kea_ddns_commit): Commits staged Kea DHCP-DDNS configuration changes to disk.
 * [`kea_ddns_domain`](#kea_ddns_domain): Manages Kea DHCP-DDNS domain configurations (forward or reverse).
 * [`kea_ddns_server`](#kea_ddns_server): Manages Kea DHCP-DDNS server level configuration.
-* [`kea_dhcp_v4_commit`](#kea_dhcp_v4_commit)
+* [`kea_dhcp_v4_commit`](#kea_dhcp_v4_commit): Internal: commits staged Kea DHCPv4 changes to disk. Auto-created by kea_dhcp_v4_server, kea_dhcp_v4_scope, and kea_dhcp_v4_reservation resou
 * [`kea_dhcp_v4_reservation`](#kea_dhcp_v4_reservation): Manages DHCPv4 host reservations within a subnet in the Kea kea-dhcp4.json configuration file.
 * [`kea_dhcp_v4_scope`](#kea_dhcp_v4_scope): Manages DHCPv4 subnets within the Kea kea-dhcp4.json configuration file.
 * [`kea_dhcp_v4_server`](#kea_dhcp_v4_server): Manages Kea DHCPv4 server level configuration.
@@ -42,12 +42,13 @@ Manages an instance of the Kea DHCP server
 
 The following parameters are available in the `kea_dhcp` class:
 
-* [`sensitive_db_password`](#-kea_dhcp--sensitive_db_password)
+* [`lease_sensitive_db_password`](#-kea_dhcp--lease_sensitive_db_password)
 * [`enable_dhcp4`](#-kea_dhcp--enable_dhcp4)
 * [`enable_dhcp6`](#-kea_dhcp--enable_dhcp6)
 * [`enable_ddns`](#-kea_dhcp--enable_ddns)
 * [`enable_ctrl_agent`](#-kea_dhcp--enable_ctrl_agent)
-* [`backend`](#-kea_dhcp--backend)
+* [`lease_backend`](#-kea_dhcp--lease_backend)
+* [`host_backend`](#-kea_dhcp--host_backend)
 * [`array_dhcp4_listen_interfaces`](#-kea_dhcp--array_dhcp4_listen_interfaces)
 * [`dhcp4_socket_type`](#-kea_dhcp--dhcp4_socket_type)
 * [`array_dhcp4_server_options`](#-kea_dhcp--array_dhcp4_server_options)
@@ -63,12 +64,17 @@ The following parameters are available in the `kea_dhcp` class:
 * [`lease_database_host`](#-kea_dhcp--lease_database_host)
 * [`lease_database_port`](#-kea_dhcp--lease_database_port)
 * [`lease_backend_install_mode`](#-kea_dhcp--lease_backend_install_mode)
+* [`host_sensitive_db_password`](#-kea_dhcp--host_sensitive_db_password)
+* [`host_database_name`](#-kea_dhcp--host_database_name)
+* [`host_database_user`](#-kea_dhcp--host_database_user)
+* [`host_database_host`](#-kea_dhcp--host_database_host)
+* [`host_database_port`](#-kea_dhcp--host_database_port)
 
-##### <a name="-kea_dhcp--sensitive_db_password"></a>`sensitive_db_password`
+##### <a name="-kea_dhcp--lease_sensitive_db_password"></a>`lease_sensitive_db_password`
 
 Data type: `Sensitive[String]`
 
-The password for the Kea PostgreSQL user, wrapped in a Sensitive type.
+The password for the Kea PostgreSQL lease database user, wrapped in a Sensitive type.
 It is assumed that the user name is kea, however this can be changed in
 the kea_dhcp::install::postgresql class if needed.
 
@@ -105,15 +111,23 @@ manage the Kea services on this node.
 
 Default value: `true`
 
-##### <a name="-kea_dhcp--backend"></a>`backend`
+##### <a name="-kea_dhcp--lease_backend"></a>`lease_backend`
 
 Data type: `Kea_Dhcp::Backends`
 
-The backend type to use for storing leases and host reservations.
-Might also contain other configuration information, depending on the
-mood of the developer.
+The backend type to use for storing DHCP leases.
 
 Default value: `'postgresql'`
+
+##### <a name="-kea_dhcp--host_backend"></a>`host_backend`
+
+Data type: `Enum['postgresql', 'json']`
+
+The backend type to use for storing host reservations. Use 'json' (default)
+to store reservations in kea-dhcp4.conf, or 'postgresql' to store them in
+the host database and manage them via the libdhcp_host_cmds.so hook.
+
+Default value: `'json'`
 
 ##### <a name="-kea_dhcp--array_dhcp4_listen_interfaces"></a>`array_dhcp4_listen_interfaces`
 
@@ -241,6 +255,47 @@ Controls how the lease database backend is installed.
 
 Default value: `'instance'`
 
+##### <a name="-kea_dhcp--host_sensitive_db_password"></a>`host_sensitive_db_password`
+
+Data type: `Optional[Sensitive[String]]`
+
+The password for the Kea PostgreSQL host database user, wrapped in a Sensitive type.
+Required when host_backend is 'postgresql'.
+
+Default value: `undef`
+
+##### <a name="-kea_dhcp--host_database_name"></a>`host_database_name`
+
+Data type: `String`
+
+Name of the PostgreSQL database to use for host reservations.
+
+Default value: `'kea'`
+
+##### <a name="-kea_dhcp--host_database_user"></a>`host_database_user`
+
+Data type: `String`
+
+PostgreSQL user to connect to the host database.
+
+Default value: `'kea'`
+
+##### <a name="-kea_dhcp--host_database_host"></a>`host_database_host`
+
+Data type: `Stdlib::Host`
+
+Hostname or IP address of the host database PostgreSQL server.
+
+Default value: `'127.0.0.1'`
+
+##### <a name="-kea_dhcp--host_database_port"></a>`host_database_port`
+
+Data type: `Stdlib::Port`
+
+Port number of the host database PostgreSQL server.
+
+Default value: `5432`
+
 ### <a name="kea_dhcp--config"></a>`kea_dhcp::config`
 
 Summary Configuration of the kea DHCP server application
@@ -257,7 +312,7 @@ The following parameters are available in the `kea_dhcp::config` class:
 * [`listen_interfaces`](#-kea_dhcp--config--listen_interfaces)
 * [`dhcp4_socket_type`](#-kea_dhcp--config--dhcp4_socket_type)
 * [`server_options`](#-kea_dhcp--config--server_options)
-* [`sensitive_db_password`](#-kea_dhcp--config--sensitive_db_password)
+* [`lease_sensitive_db_password`](#-kea_dhcp--config--lease_sensitive_db_password)
 * [`dhcp_ddns`](#-kea_dhcp--config--dhcp_ddns)
 * [`enable_ddns`](#-kea_dhcp--config--enable_ddns)
 * [`ddns_ip_address`](#-kea_dhcp--config--ddns_ip_address)
@@ -266,7 +321,13 @@ The following parameters are available in the `kea_dhcp::config` class:
 * [`ddns_ncr_protocol`](#-kea_dhcp--config--ddns_ncr_protocol)
 * [`ddns_ncr_format`](#-kea_dhcp--config--ddns_ncr_format)
 * [`ddns_tsig_keys`](#-kea_dhcp--config--ddns_tsig_keys)
-* [`backend`](#-kea_dhcp--config--backend)
+* [`lease_backend`](#-kea_dhcp--config--lease_backend)
+* [`host_backend`](#-kea_dhcp--config--host_backend)
+* [`host_sensitive_db_password`](#-kea_dhcp--config--host_sensitive_db_password)
+* [`host_database_name`](#-kea_dhcp--config--host_database_name)
+* [`host_database_user`](#-kea_dhcp--config--host_database_user)
+* [`host_database_host`](#-kea_dhcp--config--host_database_host)
+* [`host_database_port`](#-kea_dhcp--config--host_database_port)
 
 ##### <a name="-kea_dhcp--config--config_path"></a>`config_path`
 
@@ -332,13 +393,13 @@ Array of additional options to include in the DHCPv4 server configuration.
 
 Default value: `$kea_dhcp::array_dhcp4_server_options`
 
-##### <a name="-kea_dhcp--config--sensitive_db_password"></a>`sensitive_db_password`
+##### <a name="-kea_dhcp--config--lease_sensitive_db_password"></a>`lease_sensitive_db_password`
 
 Data type: `Sensitive[String]`
 
 Sensitive value containing the password for the lease database user.
 
-Default value: `$kea_dhcp::sensitive_db_password`
+Default value: `$kea_dhcp::lease_sensitive_db_password`
 
 ##### <a name="-kea_dhcp--config--dhcp_ddns"></a>`dhcp_ddns`
 
@@ -404,13 +465,62 @@ TSIG keys for DNS authentication.
 
 Default value: `$kea_dhcp::ddns_tsig_keys`
 
-##### <a name="-kea_dhcp--config--backend"></a>`backend`
+##### <a name="-kea_dhcp--config--lease_backend"></a>`lease_backend`
 
 Data type: `Kea_Dhcp::Backends`
 
 The backend type used for storing leases. Used to determine which hooks libraries to load.
 
-Default value: `$kea_dhcp::backend`
+Default value: `$kea_dhcp::lease_backend`
+
+##### <a name="-kea_dhcp--config--host_backend"></a>`host_backend`
+
+Data type: `Enum['postgresql', 'json']`
+
+The backend type used for host reservations. When 'postgresql', configures the
+host-database connection and loads the libdhcp_host_cmds.so hook.
+
+Default value: `$kea_dhcp::host_backend`
+
+##### <a name="-kea_dhcp--config--host_sensitive_db_password"></a>`host_sensitive_db_password`
+
+Data type: `Optional[Sensitive[String]]`
+
+Sensitive value containing the password for the host database user.
+
+Default value: `$kea_dhcp::host_sensitive_db_password`
+
+##### <a name="-kea_dhcp--config--host_database_name"></a>`host_database_name`
+
+Data type: `String`
+
+Name of the PostgreSQL database for host reservations.
+
+Default value: `$kea_dhcp::host_database_name`
+
+##### <a name="-kea_dhcp--config--host_database_user"></a>`host_database_user`
+
+Data type: `String`
+
+PostgreSQL user for the host database.
+
+Default value: `$kea_dhcp::host_database_user`
+
+##### <a name="-kea_dhcp--config--host_database_host"></a>`host_database_host`
+
+Data type: `Stdlib::Host`
+
+Hostname or IP address of the host database server.
+
+Default value: `$kea_dhcp::host_database_host`
+
+##### <a name="-kea_dhcp--config--host_database_port"></a>`host_database_port`
+
+Data type: `Integer`
+
+Port number of the host database server.
+
+Default value: `$kea_dhcp::host_database_port`
 
 ### <a name="kea_dhcp--install"></a>`kea_dhcp::install`
 
@@ -420,16 +530,16 @@ Installs all dependencies of the isc-kea application
 
 The following parameters are available in the `kea_dhcp::install` class:
 
-* [`backend`](#-kea_dhcp--install--backend)
+* [`lease_backend`](#-kea_dhcp--install--lease_backend)
 * [`install_mode`](#-kea_dhcp--install--install_mode)
 
-##### <a name="-kea_dhcp--install--backend"></a>`backend`
+##### <a name="-kea_dhcp--install--lease_backend"></a>`lease_backend`
 
 Data type: `Kea_Dhcp::Backends`
 
-The backend type to use for storing leases and host reservations.
+The backend type to use for storing leases.
 
-Default value: `$kea_dhcp::backend`
+Default value: `$kea_dhcp::lease_backend`
 
 ##### <a name="-kea_dhcp--install--install_mode"></a>`install_mode`
 
@@ -452,7 +562,7 @@ The following parameters are available in the `kea_dhcp::install::postgresql` cl
 * [`instance_user`](#-kea_dhcp--install--postgresql--instance_user)
 * [`instance_group`](#-kea_dhcp--install--postgresql--instance_group)
 * [`instance_directory_root`](#-kea_dhcp--install--postgresql--instance_directory_root)
-* [`sensitive_db_password`](#-kea_dhcp--install--postgresql--sensitive_db_password)
+* [`lease_sensitive_db_password`](#-kea_dhcp--install--postgresql--lease_sensitive_db_password)
 * [`manage_package_repo`](#-kea_dhcp--install--postgresql--manage_package_repo)
 * [`instance_port`](#-kea_dhcp--install--postgresql--instance_port)
 * [`install_mode`](#-kea_dhcp--install--postgresql--install_mode)
@@ -491,13 +601,13 @@ Data type: `Stdlib::Absolutepath`
 
 The root directory for the PostgreSQL instance directories. Sourced from hiera.
 
-##### <a name="-kea_dhcp--install--postgresql--sensitive_db_password"></a>`sensitive_db_password`
+##### <a name="-kea_dhcp--install--postgresql--lease_sensitive_db_password"></a>`lease_sensitive_db_password`
 
 Data type: `Sensitive[String]`
 
-The password for the PostgreSQL user, wrapped in a Sensitive type.
+The password for the PostgreSQL lease database user, wrapped in a Sensitive type.
 
-Default value: `$kea_dhcp::sensitive_db_password`
+Default value: `$kea_dhcp::lease_sensitive_db_password`
 
 ##### <a name="-kea_dhcp--install--postgresql--manage_package_repo"></a>`manage_package_repo`
 
@@ -773,7 +883,7 @@ usually discover the appropriate provider for your platform.
 
 ### <a name="kea_dhcp_v4_commit"></a>`kea_dhcp_v4_commit`
 
-The kea_dhcp_v4_commit type.
+Internal: commits staged Kea DHCPv4 changes to disk. Auto-created by kea_dhcp_v4_server, kea_dhcp_v4_scope, and kea_dhcp_v4_reservation resources.
 
 #### Properties
 
@@ -848,6 +958,7 @@ The following parameters are available in the `kea_dhcp_v4_reservation` type.
 * [`config_path`](#-kea_dhcp_v4_reservation--config_path)
 * [`name`](#-kea_dhcp_v4_reservation--name)
 * [`provider`](#-kea_dhcp_v4_reservation--provider)
+* [`socket_path`](#-kea_dhcp_v4_reservation--socket_path)
 
 ##### <a name="-kea_dhcp_v4_reservation--config_path"></a>`config_path`
 
@@ -865,6 +976,12 @@ A unique identifier for the reservation used only by Puppet.
 
 The specific backend to use for this `kea_dhcp_v4_reservation` resource. You will seldom need to specify this --- Puppet
 will usually discover the appropriate provider for your platform.
+
+##### <a name="-kea_dhcp_v4_reservation--socket_path"></a>`socket_path`
+
+Path to the kea-dhcp4 control socket. Used by the unix_socket provider.
+
+Default value: `/var/run/kea/kea4-ctrl-socket`
 
 ### <a name="kea_dhcp_v4_scope"></a>`kea_dhcp_v4_scope`
 
@@ -954,6 +1071,10 @@ Default value: `present`
 Array of hooks library configurations. Each element is a hash with at least a library key.
 
 Default value: `[]`
+
+##### `host_database`
+
+Host database configuration for storing reservations. Only postgresql is supported.
 
 ##### `interfaces_config`
 

@@ -186,6 +186,64 @@ The provider automatically finds the correct subnet by matching the IP address a
 
 Uniqueness is enforced within each subnet - duplicate identifiers, IP addresses, or hostnames will be rejected.
 
+### Host Reservation Backend
+
+By default, reservations are stored inline in `kea-dhcp4.conf` (the `json` provider). For larger environments, reservations can be stored in a separate PostgreSQL database using the `hosts-database` backend. This enables the `unix_socket` provider, which manages reservations through the `kea-dhcp4` control socket at runtime.
+
+#### Inline storage (default)
+
+No additional configuration is required. Reservations are written directly to `kea-dhcp4.conf`:
+
+```puppet
+class { 'kea_dhcp':
+  lease_sensitive_db_password => Sensitive('SecurePassword123!'),
+}
+
+kea_dhcp_v4_reservation { 'fileserver':
+  ensure          => present,
+  identifier_type => 'hw-address',
+  identifier      => '00:11:22:33:44:55',
+  ip_address      => '192.0.2.10',
+}
+```
+
+#### PostgreSQL host database
+
+Set `host_backend => 'postgresql'` and supply the database credentials. The module configures the `hosts-database` connection and loads the `libdhcp_host_cmds.so` hook automatically.
+
+```puppet
+class { 'kea_dhcp':
+  lease_sensitive_db_password => Sensitive('SecurePassword123!'),
+  host_backend                => 'postgresql',
+  host_sensitive_db_password  => Sensitive('HostDbP@ssw0rd!'),
+  # Optional — defaults shown below
+  host_database_name          => 'kea',
+  host_database_user          => 'kea',
+  host_database_host          => '127.0.0.1',
+  host_database_port          => 5432,
+}
+
+kea_dhcp_v4_reservation { 'fileserver':
+  ensure          => present,
+  identifier_type => 'hw-address',
+  identifier      => '00:11:22:33:44:55',
+  ip_address      => '192.0.2.10',
+}
+```
+
+> **Two-run bootstrap**: provider selection depends on whether `hosts-database` is present in `kea-dhcp4.conf` at the start of the Puppet run. On the **first run** after switching to `host_backend => 'postgresql'`, Puppet writes `hosts-database` to the config file but cannot yet apply reservations via the database (the Puppet feature `kea_host_database` was not active at catalogue compile time). A warning is emitted for each skipped reservation. On the **second run**, the feature is detected, the `unix_socket` provider is selected, and reservations are applied to the database.
+
+#### Transitioning from inline to host database
+
+If you previously used the default `json` provider and switch to `host_backend => 'postgresql'`, any inline reservations embedded in `kea-dhcp4.conf` are automatically removed when the server provider writes `hosts-database`. A warning identifies how many inline reservations were removed. Re-run Puppet a second time to re-create them via the database:
+
+```
+Warning: Kea_dhcp_v4_server[dhcp4]: removed 3 inline reservation(s) from
+kea-dhcp4.conf; re-run Puppet to apply them via the hosts-database.
+```
+
+No manual cleanup is required — the transition is handled entirely by the module across two Puppet runs.
+
 ### Interface Configuration
 
 By default the DHCPv4 server listens on all available interfaces. Use `array_dhcp4_listen_interfaces` to restrict this to specific interfaces, and `dhcp4_socket_type` to control the socket type.
@@ -377,9 +435,11 @@ The DDNS server configuration is managed centrally through the `kea_dhcp` class.
 
 ### Hiera Example
 
+#### Inline reservations (default)
+
 ```yaml
 ---
-kea_dhcp::sensitive_db_password: ENC[PKCS7,...]
+kea_dhcp::lease_sensitive_db_password: ENC[PKCS7,...]
 kea_dhcp::lease_backend_install_mode: 'instance'
 kea_dhcp::array_dhcp4_listen_interfaces:
   - 'enp5s0'
@@ -389,6 +449,20 @@ kea_dhcp::array_dhcp4_server_options:
     data: '8.8.8.8, 8.8.4.4'
   - name: 'domain-name'
     data: 'example.org'
+```
+
+#### PostgreSQL host database
+
+```yaml
+---
+kea_dhcp::lease_sensitive_db_password: ENC[PKCS7,...]
+kea_dhcp::lease_backend_install_mode: 'instance'
+kea_dhcp::host_backend: 'postgresql'
+kea_dhcp::host_sensitive_db_password: ENC[PKCS7,...]
+kea_dhcp::host_database_port: 5432
+kea_dhcp::array_dhcp4_listen_interfaces:
+  - 'enp5s0'
+  - 'enp6s0'
 ```
 
 ## Reference
