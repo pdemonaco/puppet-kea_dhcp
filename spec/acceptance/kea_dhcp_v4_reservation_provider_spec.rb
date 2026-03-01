@@ -401,6 +401,83 @@ describe 'kea_dhcp_v4_reservation provider' do
     end
   end
 
+  describe 'transition from inline to host database' do
+    before(:all) do
+      reset_kea_configs
+      install_repository
+
+      # Establish a baseline with inline reservations (no host backend)
+      base_manifest = <<~PP
+        class { 'kea_dhcp':
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          enable_ddns                 => false,
+          enable_ctrl_agent           => false,
+        }
+
+        kea_dhcp_v4_scope { 'test-subnet':
+          ensure => present,
+          id     => 1,
+          subnet => '192.0.2.0/24',
+          pools  => ['192.0.2.10 - 192.0.2.200'],
+        }
+
+        kea_dhcp_v4_reservation { 'migrated-host':
+          ensure          => present,
+          identifier_type => 'hw-address',
+          identifier      => 'ca:fe:ba:be:00:01',
+          ip_address      => '192.0.2.60',
+          hostname        => 'migrated-host',
+        }
+      PP
+      apply_manifest(base_manifest, catch_failures: true)
+    end
+
+    it 'removes inline reservations from kea-dhcp4.conf when hosts-database is added' do
+      # Verify the inline reservation is present before the transition
+      config = JSON.parse(run_shell("cat #{config_path}").stdout)
+      subnet = config.dig('Dhcp4', 'subnet4')&.find { |s| s['id'] == 1 }
+      expect(subnet&.dig('reservations')&.find { |r| r['hw-address'] == 'ca:fe:ba:be:00:01' }).not_to be_nil
+
+      transition_manifest = <<~PP
+        class { 'kea_dhcp':
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          host_backend                => 'postgresql',
+          host_sensitive_db_password  => Sensitive('LitmusP@ssw0rd!'),
+          host_database_port          => 5433,
+          enable_ddns                 => false,
+          enable_ctrl_agent           => false,
+        }
+
+        kea_dhcp_v4_scope { 'test-subnet':
+          ensure => present,
+          id     => 1,
+          subnet => '192.0.2.0/24',
+          pools  => ['192.0.2.10 - 192.0.2.200'],
+        }
+
+        kea_dhcp_v4_reservation { 'migrated-host':
+          ensure          => present,
+          identifier_type => 'hw-address',
+          identifier      => 'ca:fe:ba:be:00:01',
+          ip_address      => '192.0.2.60',
+          hostname        => 'migrated-host',
+        }
+      PP
+
+      result = apply_manifest(transition_manifest, catch_failures: true)
+
+      output = result.stdout + result.stderr
+      expect(output).to match(%r{Warning:.*removed.*1.*inline reservation})
+
+      config = JSON.parse(run_shell("cat #{config_path}").stdout)
+
+      expect(config.dig('Dhcp4', 'hosts-database', 'type')).to eq('postgresql')
+
+      subnet = config.dig('Dhcp4', 'subnet4')&.find { |s| s['id'] == 1 }
+      expect(Array(subnet&.fetch('reservations', nil))).to be_empty
+    end
+  end
+
   describe 'unix_socket provider' do
     let(:socket_path) { '/var/run/kea/kea4-ctrl-socket' }
 

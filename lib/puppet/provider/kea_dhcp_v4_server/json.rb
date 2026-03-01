@@ -167,6 +167,20 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       dhcp4[self.class::LEASE_DATABASE_KEY] = lease_db unless lease_db.empty?
       host_db = stringify_keys(value_for(:host_database))
       dhcp4[self.class::HOST_DATABASE_KEY] = host_db unless host_db.empty?
+
+      unless host_db.empty?
+        cleared = Array(dhcp4[self.class::SUBNET4_KEY]).sum do |subnet|
+          Array(subnet.delete('reservations')).size
+        end
+        if cleared.positive?
+          Puppet.warning(
+            "Kea_dhcp_v4_server[#{resource[:name]}]: removed #{cleared} inline " \
+            'reservation(s) from kea-dhcp4.conf; re-run Puppet to apply them ' \
+            'via the hosts-database.',
+          )
+        end
+      end
+
       ddns_config = stringify_keys(value_for(:dhcp_ddns))
       dhcp4['dhcp-ddns'] = ddns_config unless ddns_config.empty?
       interfaces_cfg = stringify_keys(value_for(:interfaces_config))
