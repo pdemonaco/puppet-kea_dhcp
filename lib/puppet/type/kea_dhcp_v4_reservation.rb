@@ -99,6 +99,10 @@ Puppet::Type.newtype(:kea_dhcp_v4_reservation) do
     [self[:config_path]]
   end
 
+  autorequire(:kea_dhcp_v4_server) do
+    catalog.resources.select { |r| r.is_a?(Puppet::Type.type(:kea_dhcp_v4_server)) }
+  end
+
   autorequire(:kea_dhcp_v4_scope) do
     catalog.resources.select { |r| r.is_a?(Puppet::Type.type(:kea_dhcp_v4_scope)) }
   end

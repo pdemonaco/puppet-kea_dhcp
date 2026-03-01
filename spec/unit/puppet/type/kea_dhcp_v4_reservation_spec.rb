@@ -221,6 +221,27 @@ describe Puppet::Type.type(:kea_dhcp_v4_reservation) do
     end
   end
 
+  describe 'autorequire' do
+    it 'autorequires the kea_dhcp_v4_server resource' do
+      catalog = Puppet::Resource::Catalog.new
+      server = Puppet::Type.type(:kea_dhcp_v4_server).new(name: 'dhcp4')
+      reservation = described_class.new(
+        name: 'auto-req-test',
+        identifier_type: 'hw-address',
+        identifier: '01:aa:bb:cc:dd:ee:ff',
+        ip_address: '192.0.2.100',
+      )
+      catalog.add_resource(server)
+      catalog.add_resource(reservation)
+
+      relationships = reservation.autorequire
+      server_relationship = relationships.find { |r| r.source == server }
+
+      expect(server_relationship).not_to be_nil
+      expect(server_relationship.target).to eq(reservation)
+    end
+  end
+
   context 'when validating scope_id' do
     it 'accepts integer scope_id values' do
       resource = described_class.new(

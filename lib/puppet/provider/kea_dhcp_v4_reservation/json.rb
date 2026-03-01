@@ -155,13 +155,29 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:json, parent: PuppetX::KeaD
   def flush
     return if @property_flush.empty? && @property_hash.empty?
 
+    config = self.class.config_for(config_path)
+
+    # If hosts-database is already staged in the in-memory config by the server
+    # provider, writing inline reservations would conflict with the host database
+    # on subsequent runs (when the unix_socket provider takes over). Skip this
+    # run and warn so that the commit still proceeds and writes hosts-database to
+    # disk; on the next Puppet run the kea_host_database feature will be true and
+    # the unix_socket provider will be selected instead.
+    if config.dig(self.class::DHCP4_KEY, self.class::HOST_DATABASE_KEY).is_a?(Hash)
+      Puppet.warning(
+        "Kea_dhcp_v4_reservation[#{resource[:name]}]: skipping inline reservation: " \
+        'hosts-database is being configured in this catalog run but the ' \
+        'kea_host_database feature was not yet active. ' \
+        'Re-run Puppet to apply this reservation via the unix_socket provider.',
+      )
+      return
+    end
+
     Puppet.debug do
       "kea_dhcp_v4_reservation[#{resource[:name]}]: scope_id=#{value_for(:scope_id).inspect} " \
         "identifier_type=#{value_for(:identifier_type).inspect} identifier=#{value_for(:identifier).inspect} " \
         "ip_address=#{value_for(:ip_address).inspect} hostname=#{value_for(:hostname).inspect}"
     end
-
-    config = self.class.config_for(config_path)
     config[self.class::DHCP4_KEY] ||= {}
     config[self.class::DHCP4_KEY][self.class::SUBNET4_KEY] ||= []
     subnets = config[self.class::DHCP4_KEY][self.class::SUBNET4_KEY]

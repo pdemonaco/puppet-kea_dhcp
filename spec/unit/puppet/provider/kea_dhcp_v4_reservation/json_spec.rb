@@ -532,4 +532,66 @@ describe provider_class do
       expect { provider.flush }.to raise_error(Puppet::Error, %r{Cannot find subnet containing IP address 10\.0\.0\.100})
     end
   end
+
+  context 'when hosts-database is staged in the in-memory config' do
+    it 'emits a warning and skips writing the inline reservation' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'subnet4' => [{ 'id' => 1, 'subnet' => '192.0.2.0/24' }],
+          'hosts-database' => { 'type' => 'postgresql', 'name' => 'kea' },
+        },
+      )
+
+      resource = type_class.new(
+        name: 'staged-host',
+        identifier_type: 'hw-address',
+        identifier: '1a:1b:1c:1d:1e:1f',
+        ip_address: '192.0.2.100',
+        config_path: config_path,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+
+      expect(Puppet).to receive(:warning).with(%r{hosts-database.*being configured.*Re-run Puppet})
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      subnet = config['Dhcp4']['subnet4'].first
+      expect(Array(subnet['reservations'])).to be_empty
+    end
+
+    it 'does not mark the config dirty so the commit is a no-op for this path' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'subnet4' => [{ 'id' => 1, 'subnet' => '192.0.2.0/24' }],
+          'hosts-database' => { 'type' => 'postgresql', 'name' => 'kea' },
+        },
+      )
+
+      resource = type_class.new(
+        name: 'staged-host-2',
+        identifier_type: 'hw-address',
+        identifier: 'aa:bb:cc:dd:ee:ff',
+        ip_address: '192.0.2.101',
+        config_path: config_path,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      allow(Puppet).to receive(:warning)
+      provider.flush
+
+      expect(provider_class.dirty_paths).not_to include(config_path)
+    end
+  end
 end

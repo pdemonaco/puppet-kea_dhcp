@@ -308,6 +308,99 @@ describe 'kea_dhcp_v4_reservation provider' do
     end
   end
 
+  describe 'inline reservation fallback without host database' do
+    before(:all) do
+      reset_kea_configs
+      install_repository
+      base_manifest = <<~PP
+        class { 'kea_dhcp':
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          enable_ddns                 => false,
+          enable_ctrl_agent           => false,
+        }
+      PP
+      apply_manifest(base_manifest, catch_failures: true)
+    end
+
+    it 'writes the reservation inline when hosts-database is not configured' do
+      manifest = <<~PP
+        kea_dhcp_v4_scope { 'fallback-subnet':
+          ensure => present,
+          id     => 2,
+          subnet => '10.1.0.0/24',
+          pools  => ['10.1.0.10 - 10.1.0.200'],
+        }
+
+        kea_dhcp_v4_reservation { 'fallback-host':
+          ensure          => present,
+          identifier_type => 'hw-address',
+          identifier      => 'fa:fb:fc:fd:fe:ff',
+          ip_address      => '10.1.0.50',
+        }
+      PP
+
+      apply_manifest(manifest, catch_failures: true)
+      apply_manifest(manifest, catch_changes: true)
+
+      config = JSON.parse(run_shell("cat #{config_path}").stdout)
+      expect(config.dig('Dhcp4', 'hosts-database')).to be_nil
+
+      subnet = config.dig('Dhcp4', 'subnet4')&.find { |s| s['id'] == 2 }
+      reservations = Array(subnet&.fetch('reservations', nil))
+      expect(reservations.find { |r| r['hw-address'] == 'fa:fb:fc:fd:fe:ff' }).not_to be_nil
+    end
+  end
+
+  describe 'bootstrap provider selection' do
+    before(:all) do
+      reset_kea_configs
+    end
+
+    it 'warns and skips the inline reservation when hosts-database is staged in the same catalog run' do
+      manifest = <<~PP
+        class { 'kea_dhcp':
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          host_backend                => 'postgresql',
+          host_sensitive_db_password  => Sensitive('LitmusP@ssw0rd!'),
+          host_database_port          => 5433,
+          enable_ddns                 => false,
+          enable_ctrl_agent           => false,
+        }
+
+        kea_dhcp_v4_scope { 'bootstrap-subnet':
+          ensure => present,
+          id     => 1,
+          subnet => '192.0.2.0/24',
+          pools  => ['192.0.2.10 - 192.0.2.200'],
+        }
+
+        kea_dhcp_v4_reservation { 'bootstrap-host':
+          ensure          => present,
+          identifier_type => 'hw-address',
+          identifier      => '1a:1b:1c:1d:1e:1f',
+          ip_address      => '192.0.2.100',
+          hostname        => 'bootstrap-host',
+        }
+      PP
+
+      result = apply_manifest(manifest, catch_failures: true)
+
+      output = result.stdout + result.stderr
+      expect(output).to match(
+        %r{Warning:.*Kea_dhcp_v4_reservation\[bootstrap-host\].*hosts-database.*being configured},
+      )
+
+      config = JSON.parse(run_shell("cat #{config_path}").stdout)
+
+      host_db = config.dig('Dhcp4', 'hosts-database')
+      expect(host_db).not_to be_nil
+      expect(host_db['type']).to eq('postgresql')
+
+      subnet = config.dig('Dhcp4', 'subnet4')&.find { |s| s['id'] == 1 }
+      expect(Array(subnet&.fetch('reservations', nil))).to be_empty
+    end
+  end
+
   describe 'unix_socket provider' do
     let(:socket_path) { '/var/run/kea/kea4-ctrl-socket' }
 

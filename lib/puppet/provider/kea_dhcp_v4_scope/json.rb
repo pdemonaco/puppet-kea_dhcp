@@ -162,7 +162,6 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
     config[self.class::DHCP4_KEY][self.class::SUBNET4_KEY] = subnets
 
     self.class.mark_dirty(config_path)
-    self.class.save_if_dirty(config_path)
 
     @property_hash = self.class.scope_to_resource_hash(entry, config_path)
     @property_flush.clear
