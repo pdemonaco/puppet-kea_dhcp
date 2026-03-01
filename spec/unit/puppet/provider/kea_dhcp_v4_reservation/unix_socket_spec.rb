@@ -10,7 +10,7 @@ describe provider_class do
   let(:type_class) { Puppet::Type.type(:kea_dhcp_v4_reservation) }
   let(:tempfile) { Tempfile.new('kea-dhcp4') }
   let(:config_path) { tempfile.path }
-  let(:socket_path) { '/run/kea/kea4-ctrl-socket-test' }
+  let(:socket_path) { '/var/run/kea/kea4-ctrl-socket-test' }
 
   before(:each) do
     tempfile.close

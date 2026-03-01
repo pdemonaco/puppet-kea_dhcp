@@ -10,7 +10,7 @@ describe 'kea_dhcp_v4_scope provider' do
     install_repository
     base_manifest = <<~PP
       class { 'kea_dhcp':
-        sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+        lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
         enable_ddns           => false,
         enable_ctrl_agent     => false,
       }
@@ -144,7 +144,7 @@ describe 'kea_dhcp_v4_scope provider' do
     it 'commits scope changes even when server controls the config path' do
       manifest = <<~PP
         class { 'kea_dhcp':
-          sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
           enable_ddns           => false,
           enable_ctrl_agent     => false,
         }

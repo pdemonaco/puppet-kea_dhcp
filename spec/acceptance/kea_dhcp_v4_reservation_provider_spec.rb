@@ -10,7 +10,7 @@ describe 'kea_dhcp_v4_reservation provider' do
     install_repository
     base_manifest = <<~PP
       class { 'kea_dhcp':
-        sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+        lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
         enable_ddns           => false,
         enable_ctrl_agent     => false,
       }
@@ -305,6 +305,142 @@ describe 'kea_dhcp_v4_reservation provider' do
       expect(subnet['subnet']).to eq('192.0.2.0/24')
       expect(subnet['pools']).not_to be_empty
       expect(subnet['reservations'].find { |r| r['hw-address'] == 'dd:dd:dd:dd:dd:dd' }).not_to be_nil
+    end
+  end
+
+  describe 'unix_socket provider' do
+    let(:socket_path) { '/var/run/kea/kea4-ctrl-socket' }
+
+    # Send a reservation-get command via the kea-dhcp4 control socket and
+    # return the parsed JSON response.
+    def socket_get_reservation(socket_path, subnet_id, identifier_type, identifier)
+      result = run_shell(
+        "/opt/puppetlabs/puppet/bin/ruby -e \"require 'socket'; require 'json'; " \
+        "s=UNIXSocket.new('#{socket_path}'); " \
+        "s.write({'command'=>'reservation-get','arguments'=>{'subnet-id'=>#{subnet_id}," \
+        "'identifier-type'=>'#{identifier_type}','identifier'=>'#{identifier}'}}.to_json); " \
+        's.close_write; puts s.read"',
+      )
+      JSON.parse(result.stdout)
+    end
+
+    before :all do
+      reset_kea_configs
+      install_repository
+
+      # Apply kea_dhcp with postgresql host backend.  The kea database on the
+      # instance port (5433) already contains the full Kea schema including
+      # hosts tables, so no additional schema init is required.
+      base_manifest = <<~PP
+        class { 'kea_dhcp':
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          host_backend                => 'postgresql',
+          host_sensitive_db_password  => Sensitive('LitmusP@ssw0rd!'),
+          host_database_port          => 5433,
+          enable_ddns                 => false,
+          enable_ctrl_agent           => false,
+        }
+
+        kea_dhcp_v4_scope { 'test-subnet':
+          ensure => present,
+          id     => 1,
+          subnet => '192.0.2.0/24',
+          pools  => ['192.0.2.10 - 192.0.2.200'],
+        }
+      PP
+      apply_manifest(base_manifest, catch_failures: true)
+
+      # Inject the control-socket into the config and restart kea-dhcp4.
+      # The kea_dhcp_v4_server provider preserves unmanaged keys so this
+      # persists across subsequent puppet runs.
+      run_shell(
+        'python3 -c "import json; ' \
+        "f=open('/etc/kea/kea-dhcp4.conf'); cfg=json.load(f); f.close(); " \
+        "cfg['Dhcp4']['control-socket']={'socket-type':'unix','socket-name':'/var/run/kea/kea4-ctrl-socket'}; " \
+        "f=open('/etc/kea/kea-dhcp4.conf','w'); json.dump(cfg,f,indent=2); f.close()\"",
+      )
+      run_shell('systemctl restart kea-dhcp4')
+      run_shell("timeout 30 bash -c 'until [ -S /var/run/kea/kea4-ctrl-socket ]; do sleep 1; done'")
+    end
+
+    context 'when creating a reservation via the control socket' do
+      let(:manifest) do
+        <<~PP
+          kea_dhcp_v4_reservation { 'socket-host-1':
+            ensure          => present,
+            identifier_type => 'hw-address',
+            identifier      => '1a:1b:1c:1d:1e:1f',
+            ip_address      => '192.0.2.110',
+            hostname        => 'socket-host-1',
+            socket_path     => '/var/run/kea/kea4-ctrl-socket',
+          }
+        PP
+      end
+
+      it 'applies the manifest idempotently' do
+        apply_manifest(manifest, catch_failures: true)
+        apply_manifest(manifest, catch_changes: true)
+      end
+
+      it 'stores the reservation in the host database, not in kea-dhcp4.conf' do
+        apply_manifest(manifest, catch_failures: true)
+
+        config = JSON.parse(run_shell("cat #{config_path}").stdout)
+        subnet = config['Dhcp4']['subnet4'].find { |s| s['id'] == 1 }
+        reservations = Array(subnet['reservations'])
+
+        expect(reservations.none? { |r| r['hw-address'] == '1a:1b:1c:1d:1e:1f' }).to be true
+      end
+
+      it 'can retrieve the reservation via the kea-dhcp4 control socket' do
+        apply_manifest(manifest, catch_failures: true)
+
+        response = socket_get_reservation(socket_path, 1, 'hw-address', '1a:1b:1c:1d:1e:1f')
+
+        expect(response['result']).to eq(0)
+        expect(response.dig('arguments', 'ip-address')).to eq('192.0.2.110')
+        expect(response.dig('arguments', 'hostname')).to eq('socket-host-1')
+      end
+    end
+
+    context 'when removing a reservation via the control socket' do
+      before(:each) do
+        setup_manifest = <<~PP
+          kea_dhcp_v4_reservation { 'socket-host-2':
+            ensure          => present,
+            identifier_type => 'hw-address',
+            identifier      => 'aa:bb:cc:dd:ee:ff',
+            ip_address      => '192.0.2.111',
+            socket_path     => '/var/run/kea/kea4-ctrl-socket',
+          }
+        PP
+        apply_manifest(setup_manifest, catch_failures: true)
+      end
+
+      let(:absent_manifest) do
+        <<~PP
+          kea_dhcp_v4_reservation { 'socket-host-2':
+            ensure          => absent,
+            identifier_type => 'hw-address',
+            identifier      => 'aa:bb:cc:dd:ee:ff',
+            ip_address      => '192.0.2.111',
+            socket_path     => '/var/run/kea/kea4-ctrl-socket',
+          }
+        PP
+      end
+
+      it 'removes the reservation idempotently' do
+        apply_manifest(absent_manifest, catch_failures: true)
+        apply_manifest(absent_manifest, catch_changes: true)
+      end
+
+      it 'confirms the reservation is gone via the kea-dhcp4 control socket' do
+        apply_manifest(absent_manifest, catch_failures: true)
+
+        response = socket_get_reservation(socket_path, 1, 'hw-address', 'aa:bb:cc:dd:ee:ff')
+
+        expect(response['result']).to eq(3) # Kea result 3 = not found
+      end
     end
   end
 end

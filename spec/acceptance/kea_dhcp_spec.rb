@@ -13,7 +13,7 @@ describe 'kea_dhcp class on Rocky' do
     let(:manifest) do
       <<~PP
         class { 'kea_dhcp':
-          sensitive_db_password       => Sensitive('#{db_password}'),
+          lease_sensitive_db_password       => Sensitive('#{db_password}'),
           array_dhcp4_server_options  => [
             { 'name' => 'routers', 'data' => '192.0.2.1' },
           ],
@@ -80,7 +80,7 @@ describe 'kea_dhcp class on Rocky' do
       let(:manifest) do
         <<~PP
           class { 'kea_dhcp':
-            sensitive_db_password      => Sensitive('LitmusP@ssw0rd!'),
+            lease_sensitive_db_password      => Sensitive('LitmusP@ssw0rd!'),
             enable_ddns                => false,
             enable_ctrl_agent          => false,
           }
@@ -106,7 +106,7 @@ describe 'kea_dhcp class on Rocky' do
       let(:manifest) do
         <<~PP
           class { 'kea_dhcp':
-            sensitive_db_password         => Sensitive('LitmusP@ssw0rd!'),
+            lease_sensitive_db_password         => Sensitive('LitmusP@ssw0rd!'),
             enable_ddns                   => false,
             enable_ctrl_agent             => false,
             array_dhcp4_listen_interfaces => ['lo'],
@@ -131,7 +131,7 @@ describe 'kea_dhcp class on Rocky' do
       let(:manifest) do
         <<~PP
           class { 'kea_dhcp':
-            sensitive_db_password      => Sensitive('LitmusP@ssw0rd!'),
+            lease_sensitive_db_password      => Sensitive('LitmusP@ssw0rd!'),
             enable_ddns                => false,
             enable_ctrl_agent          => false,
             dhcp4_socket_type          => 'udp',
@@ -159,7 +159,7 @@ describe 'kea_dhcp class on Rocky' do
     let(:manifest) do
       <<~PP
         class { 'kea_dhcp':
-          sensitive_db_password       => Sensitive('#{db_password}'),
+          lease_sensitive_db_password       => Sensitive('#{db_password}'),
           array_dhcp4_server_options  => [
             { 'name' => 'routers', 'data' => '192.0.2.1' },
           ],
@@ -273,7 +273,7 @@ describe 'kea_dhcp class on Rocky' do
     let(:manifest) do
       <<~PP
         class { 'kea_dhcp':
-          sensitive_db_password      => Sensitive('LitmusP@ssw0rd!'),
+          lease_sensitive_db_password      => Sensitive('LitmusP@ssw0rd!'),
           array_dhcp4_server_options => [
             { 'name' => 'time-servers', 'data' => 'not-an-ip-address' },
           ],
@@ -299,7 +299,7 @@ describe 'kea_dhcp class on Rocky' do
     let(:manifest) do
       <<~PP
         class { 'kea_dhcp':
-          sensitive_db_password      => Sensitive('#{db_password}'),
+          lease_sensitive_db_password      => Sensitive('#{db_password}'),
           array_dhcp4_server_options => [
             { 'name' => 'routers', 'data' => '192.0.2.1' },
           ],
@@ -345,6 +345,47 @@ describe 'kea_dhcp class on Rocky' do
       router_option = server_options.find { |opt| opt['name'] == 'routers' }
       expect(router_option).not_to be_nil
       expect(router_option['data']).to eq('192.0.2.1')
+    end
+  end
+
+  describe 'host database configuration' do
+    before(:all) do
+      reset_kea_configs
+    end
+
+    let(:manifest) do
+      <<~PP
+        class { 'kea_dhcp':
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          host_backend                => 'postgresql',
+          host_sensitive_db_password  => Sensitive('LitmusP@ssw0rd!'),
+          host_database_port          => 5433,
+          enable_ddns                 => false,
+          enable_ctrl_agent           => false,
+        }
+      PP
+    end
+
+    it 'applies the manifest idempotently' do
+      apply_manifest(manifest, catch_failures: true)
+      apply_manifest(manifest, catch_changes: true)
+    end
+
+    it 'writes hosts-database to kea-dhcp4.conf' do
+      config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp4.conf').stdout)
+      host_db = config.dig('Dhcp4', 'hosts-database')
+
+      expect(host_db).not_to be_nil
+      expect(host_db['type']).to eq('postgresql')
+      expect(host_db['name']).to eq('kea')
+      expect(host_db['port']).to eq(5433)
+    end
+
+    it 'loads libdhcp_host_cmds.so in hooks-libraries' do
+      config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp4.conf').stdout)
+      libraries = Array(config.dig('Dhcp4', 'hooks-libraries')).map { |h| h['library'] }
+
+      expect(libraries).to include('/usr/lib64/kea/hooks/libdhcp_host_cmds.so')
     end
   end
 end

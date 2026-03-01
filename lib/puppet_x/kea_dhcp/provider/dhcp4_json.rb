@@ -37,7 +37,7 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
   SUBNET4_KEY = 'subnet4'
   OPTION_DATA_KEY = 'option-data'
   LEASE_DATABASE_KEY = 'lease-database'
-  HOST_DATABASE_KEY = 'host-database'
+  HOST_DATABASE_KEY = 'hosts-database'
   HOOKS_LIBRARIES_KEY = 'hooks-libraries'
   USER_CONTEXT_KEY = 'puppet_name'
   SERVER_INSTANCE_NAME = 'dhcp4'

@@ -29,7 +29,7 @@ describe 'kea_ddns_commit provider' do
     install_repository
     base_manifest = <<~PP
       class { 'kea_dhcp':
-        sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+        lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
         enable_ddns           => true,
         enable_ctrl_agent     => false,
       }

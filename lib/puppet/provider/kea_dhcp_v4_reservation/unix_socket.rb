@@ -11,7 +11,7 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:unix_socket, parent: Puppet
   confine feature: :kea_host_database
   defaultfor feature: :kea_host_database
 
-  DEFAULT_SOCKET_PATH = '/run/kea/kea4-ctrl-socket'
+  DEFAULT_SOCKET_PATH = '/var/run/kea/kea4-ctrl-socket'
 
   def initialize(value = {})
     super(value)
@@ -37,7 +37,7 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:unix_socket, parent: Puppet
       subnet_id = resolve_subnet_id(
         resource[:scope_id],
         ip_address,
-        resource[:config_path] || DEFAULT_CONFIG_PATH,
+        resource[:config_path] || self::DEFAULT_CONFIG_PATH,
       )
       next unless subnet_id
 
@@ -67,7 +67,7 @@ Puppet::Type.type(:kea_dhcp_v4_reservation).provide(:unix_socket, parent: Puppet
     return scope_id if scope_id && scope_id != :auto
 
     config = config_for(config_path)
-    subnets = Array(config.dig(DHCP4_KEY, SUBNET4_KEY))
+    subnets = Array(config.dig(self::DHCP4_KEY, self::SUBNET4_KEY))
     subnet = find_subnet_for_ip(subnets, ip_address)
     subnet&.fetch('id', nil)
   end

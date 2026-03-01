@@ -8,7 +8,7 @@ Puppet.features.add(:kea_host_database, libs: []) do
   config_path = '/etc/kea/kea-dhcp4.conf'
   begin
     config = JSON.parse(File.read(config_path))
-    host_db = config.dig('Dhcp4', 'host-database')
+    host_db = config.dig('Dhcp4', 'hosts-database')
     host_db.is_a?(Hash) && !host_db.empty? && host_db['type'] != 'json'
   rescue StandardError
     false

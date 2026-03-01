@@ -111,7 +111,7 @@ describe provider_class do
       )
     end
 
-    it 'writes host-database when provided' do
+    it 'writes hosts-database when provided' do
       write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
 
       resource = type_class.new(
@@ -130,7 +130,7 @@ describe provider_class do
       provider_class.commit_all!
 
       config = read_config(config_path)
-      expect(config['Dhcp4']['host-database']).to include(
+      expect(config['Dhcp4']['hosts-database']).to include(
         'type' => 'postgresql',
         'name' => 'kea_hosts',
         'user' => 'kea',
@@ -140,7 +140,7 @@ describe provider_class do
       )
     end
 
-    it 'does not write host-database key when not provided' do
+    it 'does not write hosts-database key when not provided' do
       write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
 
       resource = type_class.new(
@@ -158,7 +158,7 @@ describe provider_class do
       provider_class.commit_all!
 
       config = read_config(config_path)
-      expect(config['Dhcp4']).not_to have_key('host-database')
+      expect(config['Dhcp4']).not_to have_key('hosts-database')
     end
 
     it 'does not write hooks-libraries key when empty' do
@@ -471,12 +471,12 @@ describe provider_class do
       expect(config['Dhcp4']).not_to have_key('hooks-libraries')
     end
 
-    it 'removes host-database when destroying' do
+    it 'removes hosts-database when destroying' do
       write_config(
         config_path,
         'Dhcp4' => {
           'lease-database' => lease_db,
-          'host-database' => host_db,
+          'hosts-database' => host_db,
         },
       )
 
@@ -499,7 +499,7 @@ describe provider_class do
       provider_class.commit_all!
 
       config = read_config(config_path)
-      expect(config['Dhcp4']).not_to have_key('host-database')
+      expect(config['Dhcp4']).not_to have_key('hosts-database')
     end
 
     it 'removes interfaces-config when destroying' do
@@ -694,8 +694,8 @@ describe provider_class do
       expect(provider_class.present?({ 'interfaces-config' => { 'interfaces' => ['*'] } })).to be true
     end
 
-    it 'returns true when host-database key exists' do
-      expect(provider_class.present?({ 'host-database' => {} })).to be true
+    it 'returns true when hosts-database key exists' do
+      expect(provider_class.present?({ 'hosts-database' => {} })).to be true
     end
 
     it 'returns false when no server keys exist' do
