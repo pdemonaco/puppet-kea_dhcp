@@ -10,7 +10,7 @@ describe 'kea_dhcp_v4_commit provider' do
     install_repository
     base_manifest = <<~PP
       class { 'kea_dhcp':
-        sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+        lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
         enable_ddns           => false,
         enable_ctrl_agent     => false,
       }
@@ -54,7 +54,7 @@ describe 'kea_dhcp_v4_commit provider' do
     it 'commits a single time via the commit resource, not via post_resource_eval' do
       manifest = <<~PP
         class { 'kea_dhcp':
-          sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
           enable_ddns           => false,
           enable_ctrl_agent     => false,
         }

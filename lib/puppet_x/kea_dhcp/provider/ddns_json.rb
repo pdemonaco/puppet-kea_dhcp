@@ -129,7 +129,7 @@ class PuppetX::KeaDhcp::Provider::DdnsJson < Puppet::Provider
   def self.commit!(path)
     return unless dirty_paths.include?(path)
 
-    stage_config(path) unless staged_paths.include?(path)
+    stage_config(path)
     temp = temp_configs[path]
 
     Puppet.debug { "kea-dhcp-ddns committing config to #{path}:\n#{JSON.pretty_generate(redact_config(config_for(path)))}" }

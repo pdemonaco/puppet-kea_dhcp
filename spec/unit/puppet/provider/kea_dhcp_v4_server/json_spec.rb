@@ -23,6 +23,17 @@ describe provider_class do
     }
   end
 
+  let(:host_db) do
+    {
+      'type' => 'postgresql',
+      'name' => 'kea_hosts',
+      'user' => 'kea',
+      'password' => 'host_password',
+      'host' => '127.0.0.1',
+      'port' => 5432,
+    }
+  end
+
   before(:each) do
     tempfile.close
     provider_class.clear_state!
@@ -98,6 +109,56 @@ describe provider_class do
         { 'library' => '/usr/lib/kea/hooks/libdhcp_lease_cmds.so' },
         { 'library' => '/usr/lib/kea/hooks/libdhcp_stat_cmds.so', 'parameters' => { 'enabled' => true } },
       )
+    end
+
+    it 'writes hosts-database when provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        host_database: host_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['hosts-database']).to include(
+        'type' => 'postgresql',
+        'name' => 'kea_hosts',
+        'user' => 'kea',
+        'password' => 'host_password',
+        'host' => '127.0.0.1',
+        'port' => 5432,
+      )
+    end
+
+    it 'does not write hosts-database key when not provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('hosts-database')
     end
 
     it 'does not write hooks-libraries key when empty' do
@@ -410,6 +471,37 @@ describe provider_class do
       expect(config['Dhcp4']).not_to have_key('hooks-libraries')
     end
 
+    it 'removes hosts-database when destroying' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'lease-database' => lease_db,
+          'hosts-database' => host_db,
+        },
+      )
+
+      property_hash = {
+        ensure: :present,
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        host_database: host_db,
+      }
+
+      resource = type_class.new(name: 'dhcp4', config_path: config_path, lease_database: lease_db)
+
+      provider = provider_class.new(property_hash)
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.destroy
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('hosts-database')
+    end
+
     it 'removes interfaces-config when destroying' do
       write_config(
         config_path,
@@ -602,6 +694,10 @@ describe provider_class do
       expect(provider_class.present?({ 'interfaces-config' => { 'interfaces' => ['*'] } })).to be true
     end
 
+    it 'returns true when hosts-database key exists' do
+      expect(provider_class.present?({ 'hosts-database' => {} })).to be true
+    end
+
     it 'returns false when no server keys exist' do
       expect(provider_class.present?({ 'subnet4' => [] })).to be false
     end
@@ -648,6 +744,130 @@ describe provider_class do
       provider.flush
 
       expect(File.read(config_path)).to eq(original_content)
+    end
+  end
+
+  context 'when transitioning from inline to host-database reservations' do
+    let(:sensitive_host_password) { Puppet::Pops::Types::PSensitiveType::Sensitive.new('host_password') }
+
+    it 'removes inline reservations from all subnets when host_database is configured' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'subnet4' => [
+            {
+              'id' => 1,
+              'subnet' => '192.0.2.0/24',
+              'reservations' => [
+                { 'hw-address' => 'aa:bb:cc:dd:ee:ff', 'ip-address' => '192.0.2.50' },
+                { 'hw-address' => '11:22:33:44:55:66', 'ip-address' => '192.0.2.51' },
+              ],
+            },
+            {
+              'id' => 2,
+              'subnet' => '10.0.0.0/24',
+              'reservations' => [
+                { 'hw-address' => 'aa:aa:aa:aa:aa:aa', 'ip-address' => '10.0.0.50' },
+              ],
+            },
+          ],
+        },
+      )
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db.merge('password' => sensitive_password),
+        host_database: host_db.merge('password' => sensitive_host_password),
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      expect(Puppet).to receive(:warning).with(%r{removed 3 inline reservation\(s\)})
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      subnets = config.dig('Dhcp4', 'subnet4')
+
+      expect(Array(subnets.find { |s| s['id'] == 1 }['reservations'])).to be_empty
+      expect(Array(subnets.find { |s| s['id'] == 2 }['reservations'])).to be_empty
+      expect(config.dig('Dhcp4', 'hosts-database')).not_to be_nil
+    end
+
+    it 'preserves inline reservations when host_database is not configured' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'subnet4' => [
+            {
+              'id' => 1,
+              'subnet' => '192.0.2.0/24',
+              'reservations' => [
+                { 'hw-address' => 'aa:bb:cc:dd:ee:ff', 'ip-address' => '192.0.2.50' },
+              ],
+            },
+          ],
+        },
+      )
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db.merge('password' => sensitive_password),
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      expect(Puppet).not_to receive(:warning)
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      reservations = config.dig('Dhcp4', 'subnet4', 0, 'reservations')
+
+      expect(reservations).not_to be_nil
+      expect(reservations.size).to eq(1)
+      expect(reservations.first['hw-address']).to eq('aa:bb:cc:dd:ee:ff')
+    end
+
+    it 'emits no warning when host_database is set but no inline reservations exist' do
+      write_config(
+        config_path,
+        'Dhcp4' => {
+          'subnet4' => [
+            { 'id' => 1, 'subnet' => '192.0.2.0/24' },
+          ],
+        },
+      )
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db.merge('password' => sensitive_password),
+        host_database: host_db.merge('password' => sensitive_host_password),
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      expect(Puppet).not_to receive(:warning)
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config.dig('Dhcp4', 'hosts-database')).not_to be_nil
     end
   end
 end

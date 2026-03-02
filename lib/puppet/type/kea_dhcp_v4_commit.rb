@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 Puppet::Type.newtype(:kea_dhcp_v4_commit) do
-  @doc = 'Internal: commits staged Kea DHCPv4 changes to disk. Auto-created by ' \
-         'kea_dhcp_v4_server, kea_dhcp_v4_scope, and kea_dhcp_v4_reservation resources.'
+  @doc = 'Internal: commits staged Kea DHCPv4 changes to disk. Auto-created by kea_dhcp_v4_server, kea_dhcp_v4_scope, and kea_dhcp_v4_reservation resources.'
 
   newparam(:name, namevar: true) do
     desc 'Path to the kea-dhcp4 configuration file being committed.'

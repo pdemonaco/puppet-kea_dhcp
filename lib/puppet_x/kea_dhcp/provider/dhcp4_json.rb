@@ -37,6 +37,7 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
   SUBNET4_KEY = 'subnet4'
   OPTION_DATA_KEY = 'option-data'
   LEASE_DATABASE_KEY = 'lease-database'
+  HOST_DATABASE_KEY = 'hosts-database'
   HOOKS_LIBRARIES_KEY = 'hooks-libraries'
   USER_CONTEXT_KEY = 'puppet_name'
   SERVER_INSTANCE_NAME = 'dhcp4'
@@ -124,7 +125,7 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
   def self.commit!(path)
     return unless dirty_paths.include?(path)
 
-    stage_config(path) unless staged_paths.include?(path)
+    stage_config(path)
     temp = temp_configs[path]
 
     Puppet.debug { "kea-dhcp4 committing config to #{path}:\n#{JSON.pretty_generate(redact_config(config_for(path)))}" }
@@ -148,6 +149,22 @@ class PuppetX::KeaDhcp::Provider::Dhcp4Json < Puppet::Provider
     dirty_paths.to_a.each { |path| commit!(path) }
   ensure
     cleanup_temp_configs
+  end
+
+  def self.find_subnet_for_ip(subnets, ip_address)
+    return nil unless ip_address
+
+    require 'ipaddr'
+    target_ip = IPAddr.new(ip_address)
+
+    subnets.each do |subnet|
+      next unless subnet['subnet']
+
+      subnet_cidr = IPAddr.new(subnet['subnet'])
+      return subnet if subnet_cidr.include?(target_ip)
+    end
+
+    nil
   end
 
   def self.stringify_keys(hash)

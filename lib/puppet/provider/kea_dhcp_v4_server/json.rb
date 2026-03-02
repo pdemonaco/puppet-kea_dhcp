@@ -37,6 +37,7 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
 
   def self.present?(server_section)
     server_section.key?(self::LEASE_DATABASE_KEY) ||
+      server_section.key?(self::HOST_DATABASE_KEY) ||
       server_section.key?(self::OPTION_DATA_KEY) ||
       server_section.key?(self::HOOKS_LIBRARIES_KEY) ||
       server_section.key?('dhcp-ddns') ||
@@ -50,6 +51,7 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       options: Array(server_section[self::OPTION_DATA_KEY]).map { |opt| stringify_keys(opt) },
       hooks_libraries: Array(server_section[self::HOOKS_LIBRARIES_KEY]).map { |hook| deep_stringify_keys(hook) },
       lease_database: stringify_keys(server_section[self::LEASE_DATABASE_KEY]),
+      host_database: stringify_keys(server_section[self::HOST_DATABASE_KEY]),
       dhcp_ddns: stringify_keys(server_section['dhcp-ddns']),
       interfaces_config: stringify_keys(server_section['interfaces-config']),
       config_path: path,
@@ -88,6 +90,14 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
     @property_flush[:lease_database] = value
   end
 
+  def host_database
+    @property_hash[:host_database]
+  end
+
+  def host_database=(value)
+    @property_flush[:host_database] = value
+  end
+
   def dhcp_ddns
     @property_hash[:dhcp_ddns]
   end
@@ -109,6 +119,7 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
     @property_flush[:options] = resource[:options] || []
     @property_flush[:hooks_libraries] = resource[:hooks_libraries] || []
     @property_flush[:lease_database] = resource[:lease_database] || {}
+    @property_flush[:host_database] = resource[:host_database] || {}
     @property_flush[:dhcp_ddns] = resource[:dhcp_ddns] || {}
     @property_flush[:interfaces_config] = resource[:interfaces_config] || { 'interfaces' => ['*'] }
   end
@@ -127,7 +138,10 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
     Puppet.debug do
       lease_db = (value_for(:lease_database) || {}).dup
       lease_db['password'] = '[REDACTED]' if lease_db.key?('password')
+      host_db = (value_for(:host_database) || {}).dup
+      host_db['password'] = '[REDACTED]' if host_db.key?('password')
       "kea_dhcp_v4_server[#{resource[:name]}]: lease_database=#{lease_db.inspect} " \
+        "host_database=#{host_db.inspect} " \
         "options=#{value_for(:options).inspect} hooks_libraries=#{value_for(:hooks_libraries).inspect} " \
         "dhcp_ddns=#{value_for(:dhcp_ddns).inspect} " \
         "interfaces_config=#{value_for(:interfaces_config).inspect}"
@@ -141,6 +155,7 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       dhcp4.delete(self.class::OPTION_DATA_KEY)
       dhcp4.delete(self.class::HOOKS_LIBRARIES_KEY)
       dhcp4.delete(self.class::LEASE_DATABASE_KEY)
+      dhcp4.delete(self.class::HOST_DATABASE_KEY)
       dhcp4.delete('dhcp-ddns')
       dhcp4.delete('interfaces-config')
       ensure_state = :absent
@@ -150,6 +165,22 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       dhcp4[self.class::HOOKS_LIBRARIES_KEY] = hooks_libs unless hooks_libs.empty?
       lease_db = stringify_keys(value_for(:lease_database))
       dhcp4[self.class::LEASE_DATABASE_KEY] = lease_db unless lease_db.empty?
+      host_db = stringify_keys(value_for(:host_database))
+      dhcp4[self.class::HOST_DATABASE_KEY] = host_db unless host_db.empty?
+
+      unless host_db.empty?
+        cleared = Array(dhcp4[self.class::SUBNET4_KEY]).sum do |subnet|
+          Array(subnet.delete('reservations')).size
+        end
+        if cleared.positive?
+          Puppet.warning(
+            "Kea_dhcp_v4_server[#{resource[:name]}]: removed #{cleared} inline " \
+            'reservation(s) from kea-dhcp4.conf; re-run Puppet to apply them ' \
+            'via the hosts-database.',
+          )
+        end
+      end
+
       ddns_config = stringify_keys(value_for(:dhcp_ddns))
       dhcp4['dhcp-ddns'] = ddns_config unless ddns_config.empty?
       interfaces_cfg = stringify_keys(value_for(:interfaces_config))
@@ -177,7 +208,7 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
 
     if [:options, :hooks_libraries].include?(key) && value.nil?
       []
-    elsif [:lease_database, :dhcp_ddns, :interfaces_config].include?(key) && value.nil?
+    elsif [:lease_database, :host_database, :dhcp_ddns, :interfaces_config].include?(key) && value.nil?
       {}
     else
       value
