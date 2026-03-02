@@ -161,6 +161,24 @@ describe Puppet::Type.type(:kea_dhcp_v4_server) do
   end
 
   describe 'lease_database property' do
+    it 'redacts the password in is_to_s' do
+      resource = described_class.new(name: 'dhcp4', lease_database: base_lease_db)
+      prop = resource.property(:lease_database)
+      result = prop.is_to_s(resource[:lease_database])
+
+      expect(result).to include('REDACTED')
+      expect(result).not_to include('kea_password')
+    end
+
+    it 'redacts the password in should_to_s' do
+      resource = described_class.new(name: 'dhcp4', lease_database: base_lease_db)
+      prop = resource.property(:lease_database)
+      result = prop.should_to_s(resource[:lease_database])
+
+      expect(result).to include('REDACTED')
+      expect(result).not_to include('kea_password')
+    end
+
     it 'rejects non-hash values' do
       expect {
         described_class.new(name: 'dhcp4', lease_database: 'invalid')
@@ -197,6 +215,37 @@ describe Puppet::Type.type(:kea_dhcp_v4_server) do
           described_class.new(name: 'dhcp4', lease_database: incomplete_db)
         }.to raise_error(Puppet::ResourceError, %r{Lease database #{required_key} must be provided})
       end
+    end
+  end
+
+  describe 'host_database property' do
+    let(:base_host_db) do
+      {
+        'type' => 'postgresql',
+        'name' => 'kea_hosts',
+        'user' => 'kea',
+        'password' => Puppet::Pops::Types::PSensitiveType::Sensitive.new('host_secret'),
+        'host' => '127.0.0.1',
+        'port' => 5432,
+      }
+    end
+
+    it 'redacts the password in is_to_s' do
+      resource = described_class.new(name: 'dhcp4', lease_database: base_lease_db, host_database: base_host_db)
+      prop = resource.property(:host_database)
+      result = prop.is_to_s(resource[:host_database])
+
+      expect(result).to include('REDACTED')
+      expect(result).not_to include('host_secret')
+    end
+
+    it 'redacts the password in should_to_s' do
+      resource = described_class.new(name: 'dhcp4', lease_database: base_lease_db, host_database: base_host_db)
+      prop = resource.property(:host_database)
+      result = prop.should_to_s(resource[:host_database])
+
+      expect(result).to include('REDACTED')
+      expect(result).not_to include('host_secret')
     end
   end
 

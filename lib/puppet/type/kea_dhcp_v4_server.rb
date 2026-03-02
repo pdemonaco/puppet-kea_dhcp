@@ -130,6 +130,21 @@ Puppet::Type.newtype(:kea_dhcp_v4_server) do
       normalized
     end
 
+    def is_to_s(current_value) # rubocop:disable Naming/PredicateName
+      redact_password(current_value).inspect
+    end
+
+    def should_to_s(new_value)
+      redact_password(new_value).inspect
+    end
+
+    def redact_password(hash)
+      return hash unless hash.is_a?(Hash) && hash.key?('password')
+
+      hash.merge('password' => 'REDACTED')
+    end
+    private :redact_password
+
     def stringify_keys(hash)
       return {} unless hash.respond_to?(:each)
 
@@ -183,6 +198,21 @@ Puppet::Type.newtype(:kea_dhcp_v4_server) do
       normalized['port'] = Integer(normalized['port'])
       normalized
     end
+
+    def is_to_s(current_value) # rubocop:disable Naming/PredicateName
+      redact_password(current_value).inspect
+    end
+
+    def should_to_s(new_value)
+      redact_password(new_value).inspect
+    end
+
+    def redact_password(hash)
+      return hash unless hash.is_a?(Hash) && hash.key?('password')
+
+      hash.merge('password' => 'REDACTED')
+    end
+    private :redact_password
 
     def stringify_keys(hash)
       return {} unless hash.respond_to?(:each)
