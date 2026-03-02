@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'puppet_x/kea_dhcp/provider/dhcp4_json'
+require_relative '../../../puppet_x/kea_dhcp/provider/dhcp4_json'
 require 'json'
 require 'socket'
 
