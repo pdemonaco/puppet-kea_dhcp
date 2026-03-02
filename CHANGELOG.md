@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [0.8.0](https://github.com/pdemonaco/puppet-kea_dhcp/tree/0.8.0) (2026-03-02)
+
+[Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.7.0...0.8.0)
+
+### Added
+
+- postgres hosts-database [\#28](https://github.com/pdemonaco/puppet-kea_dhcp/pull/28) ([pdemonaco](https://github.com/pdemonaco))
+
 ## [0.7.0](https://github.com/pdemonaco/puppet-kea_dhcp/tree/0.7.0) (2026-02-28)
 
 [Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.6.0...0.7.0)
