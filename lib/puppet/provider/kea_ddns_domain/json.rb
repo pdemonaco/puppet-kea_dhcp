@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'puppet_x/kea_dhcp/provider/ddns_json'
+require_relative '../../../puppet_x/kea_dhcp/provider/ddns_json'
 
 Puppet::Type.type(:kea_ddns_domain).provide(:json, parent: PuppetX::KeaDhcp::Provider::DdnsJson) do
   desc 'Manages DDNS domain configurations in kea-dhcp-ddns.conf.'

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'puppet_x/kea_dhcp/provider/ddns_json'
+require_relative '../../../puppet_x/kea_dhcp/provider/ddns_json'
 
 Puppet::Type.type(:kea_ddns_commit).provide(:json, parent: PuppetX::KeaDhcp::Provider::DdnsJson) do
   desc 'Commits staged Kea DHCP-DDNS configuration changes.'

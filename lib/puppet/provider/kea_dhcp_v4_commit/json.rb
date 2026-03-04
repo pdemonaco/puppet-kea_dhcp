@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'puppet_x/kea_dhcp/provider/dhcp4_json'
+require_relative '../../../puppet_x/kea_dhcp/provider/dhcp4_json'
 
 Puppet::Type.type(:kea_dhcp_v4_commit).provide(:json, parent: PuppetX::KeaDhcp::Provider::Dhcp4Json) do
   desc 'Commits all staged Kea DHCPv4 configuration changes to disk.'
