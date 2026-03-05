@@ -163,6 +163,102 @@ describe 'kea_dhcp' do
         end
       end
 
+      context 'with secret-file-content TSIG keys' do
+        let(:params) do
+          super().merge(
+            enable_ddns: true,
+            ddns_tsig_keys: [
+              {
+                'name'                => 'ddns-key',
+                'algorithm'           => 'HMAC-SHA256',
+                'secret-file-content' => 'LSWXnfkKZjdPJI5QxlpnfQ==',
+              },
+            ],
+          )
+        end
+
+        it { is_expected.to compile.with_all_deps }
+
+        it 'creates the tsig directory before kea_ddns_server' do
+          is_expected.to contain_file('/etc/kea/tsig').with(
+            'ensure' => 'directory',
+            'owner'  => 'root',
+            'group'  => 'kea',
+            'mode'   => '0750',
+          ).that_comes_before('Kea_ddns_server[dhcp-ddns]')
+        end
+
+        it 'creates the key file with restricted permissions before kea_ddns_server' do
+          is_expected.to contain_file('/etc/kea/tsig/ddns-key.tsig').with(
+            'ensure'    => 'file',
+            'owner'     => 'root',
+            'group'     => 'kea',
+            'mode'      => '0640',
+            'show_diff' => false,
+          ).that_comes_before('Kea_ddns_server[dhcp-ddns]')
+        end
+
+        it 'passes secret-file path to kea_ddns_server' do
+          is_expected.to contain_kea_ddns_server('dhcp-ddns').with(
+            'tsig_keys' => [
+              {
+                'name'        => 'ddns-key',
+                'algorithm'   => 'HMAC-SHA256',
+                'secret-file' => '/etc/kea/tsig/ddns-key.tsig',
+              },
+            ],
+          )
+        end
+      end
+
+      context 'with mixed secret and secret-file-content TSIG keys' do
+        let(:params) do
+          super().merge(
+            enable_ddns: true,
+            ddns_tsig_keys: [
+              {
+                'name'      => 'plain-key',
+                'algorithm' => 'HMAC-SHA256',
+                'secret'    => 'abc123==',
+              },
+              {
+                'name'                => 'file-key',
+                'algorithm'           => 'HMAC-SHA256',
+                'secret-file-content' => 'LSWXnfkKZjdPJI5QxlpnfQ==',
+              },
+            ],
+          )
+        end
+
+        it { is_expected.to compile.with_all_deps }
+
+        it 'creates file for the secret-file-content key' do
+          is_expected.to contain_file('/etc/kea/tsig/file-key.tsig').with(
+            'ensure' => 'file',
+            'owner'  => 'root',
+            'group'  => 'kea',
+            'mode'   => '0640',
+          )
+        end
+
+        it 'passes both keys correctly to kea_ddns_server' do
+          is_expected.to contain_kea_ddns_server('dhcp-ddns').with(
+            'tsig_keys' => [
+              {
+                'name'      => 'plain-key',
+                'algorithm' => 'HMAC-SHA256',
+                'secret'    => 'abc123==',
+              },
+              {
+                'name'        => 'file-key',
+                'algorithm'   => 'HMAC-SHA256',
+                'secret-file' => '/etc/kea/tsig/file-key.tsig',
+              },
+            ],
+          )
+        end
+      end
+
       context 'with PostgreSQL setup (instance mode, default)' do
         it 'configures the server instance' do
           is_expected.to contain_postgresql__server_instance('kea').with(

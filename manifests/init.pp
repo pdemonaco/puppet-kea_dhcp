@@ -108,7 +108,7 @@ class kea_dhcp (
   Integer[1] $ddns_server_timeout = 500,
   Enum['UDP', 'TCP'] $ddns_ncr_protocol = 'UDP',
   Enum['JSON'] $ddns_ncr_format = 'JSON',
-  Array[Hash] $ddns_tsig_keys = [],
+  Array[Kea_Dhcp::TsigKey] $ddns_tsig_keys = [],
   String $lease_database_name = 'kea',
   String $lease_database_user = 'kea',
   Stdlib::Host $lease_database_host = '127.0.0.1',

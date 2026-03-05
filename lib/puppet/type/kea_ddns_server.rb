@@ -98,8 +98,12 @@ Puppet::Type.newtype(:kea_ddns_server) do
 
       normalized = value.each_with_object({}) { |(k, v), acc| acc[k.to_s] = v }
 
-      ['name', 'algorithm', 'secret'].each do |key|
+      ['name', 'algorithm'].each do |key|
         raise ArgumentError, "TSIG key must contain #{key}" unless normalized.key?(key)
+      end
+
+      unless normalized.key?('secret') || normalized.key?('secret-file')
+        raise ArgumentError, "TSIG key must contain either 'secret' or 'secret-file'"
       end
 
       valid_algorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512']
