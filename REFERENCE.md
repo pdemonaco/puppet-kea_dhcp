@@ -28,6 +28,7 @@
 * [`Kea_Dhcp::Db_install_mode`](#Kea_Dhcp--Db_install_mode): Defines the valid database installation modes for Kea DHCP
 * [`Kea_Dhcp::DdnsDomain`](#Kea_Dhcp--DdnsDomain): Utility type for declaring DDNS domains
 * [`Kea_Dhcp::MacAddress`](#Kea_Dhcp--MacAddress): MAC address format for Kea DHCP identifiers
+* [`Kea_Dhcp::TsigKey`](#Kea_Dhcp--TsigKey): Type alias for TSIG key configurations used by Kea DDNS
 * [`Kea_Dhcp::V4Reservation`](#Kea_Dhcp--V4Reservation): Utility type for declaring multiple reservations
 * [`Kea_Dhcp::V4Scope`](#Kea_Dhcp--V4Scope): Utility type for declaring multiple scopes
 * [`Kea_dhcp::Backends`](#Kea_dhcp--Backends): Defines the valid backend types for Kea DHCP
@@ -206,7 +207,7 @@ Default value: `'JSON'`
 
 ##### <a name="-kea_dhcp--ddns_tsig_keys"></a>`ddns_tsig_keys`
 
-Data type: `Array[Hash]`
+Data type: `Array[Kea_Dhcp::TsigKey]`
 
 Array of TSIG key configurations for DNS update authentication.
 
@@ -459,7 +460,7 @@ Default value: `$kea_dhcp::ddns_ncr_format`
 
 ##### <a name="-kea_dhcp--config--ddns_tsig_keys"></a>`ddns_tsig_keys`
 
-Data type: `Array[Hash]`
+Data type: `Array[Kea_Dhcp::TsigKey]`
 
 TSIG keys for DNS authentication.
 
@@ -1178,6 +1179,27 @@ Supports 6-octet (XX:XX:XX:XX:XX:XX) or 7-octet (XX:XX:XX:XX:XX:XX:XX) formats
 with either colon or hyphen separators (but not mixed).
 
 Alias of `Pattern[/\A([0-9a-fA-F]{2}[:-])([0-9a-fA-F]{2}[:-])([0-9a-fA-F]{2}[:-])([0-9a-fA-F]{2}[:-])([0-9a-fA-F]{2}[:-])([0-9a-fA-F]{2})([:-][0-9a-fA-F]{2})?\z/]`
+
+### <a name="Kea_Dhcp--TsigKey"></a>`Kea_Dhcp::TsigKey`
+
+Supports two variants:
+- secret: the TSIG key value is provided directly, optionally wrapped in Sensitive
+- secret-file: the key value is written to a file managed by this module;
+  provide the file content via the secret_file_content field
+
+Alias of
+
+```puppet
+Variant[Struct[
+    name      => String[1],
+    algorithm => Enum['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'],
+    secret    => Variant[String[1], Sensitive[String[1]]],
+  ], Struct[
+    name                => String[1],
+    algorithm           => Enum['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'],
+    secret_file_content => Variant[String[1], Sensitive[String[1]]],
+  ]]
+```
 
 ### <a name="Kea_Dhcp--V4Reservation"></a>`Kea_Dhcp::V4Reservation`
 

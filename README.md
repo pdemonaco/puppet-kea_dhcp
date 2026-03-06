@@ -3,13 +3,42 @@
 #### Table of Contents
 
 1. [Description](#description)
-2. [Setup - The basics of getting started with kea_dhcp](#setup)
+2. [Setup](#setup)
     * [What kea_dhcp affects](#what-kea_dhcp-affects)
-    * [Setup requirements](#setup-requirements)
+        * [Packages](#1---packages)
+        * [PostgreSQL Backend](#2---postgresql-backend)
+        * [Configuration](#3---configuration)
+    * [Setup Requirements](#setup-requirements)
     * [Beginning with kea_dhcp](#beginning-with-kea_dhcp)
-3. [Usage - Configuration options and additional functionality](#usage)
-4. [Limitations - OS compatibility, etc.](#limitations)
-5. [Development - Guide for contributing to the module](#development)
+3. [Usage](#usage)
+    * [Server with Global Options](#server-with-global-options)
+    * [Database Backend Installation Modes](#database-backend-installation-modes)
+        * [Dedicated PostgreSQL instance (default)](#dedicated-postgresql-instance-default)
+        * [Existing default PostgreSQL instance](#existing-default-postgresql-instance)
+        * [Externally managed database](#externally-managed-database)
+    * [Defining Subnets](#defining-subnets)
+    * [Host Reservations](#host-reservations)
+    * [Host Reservation Backend](#host-reservation-backend)
+        * [Inline storage (default)](#inline-storage-default)
+        * [PostgreSQL host database](#postgresql-host-database)
+        * [Transitioning from inline to host database](#transitioning-from-inline-to-host-database)
+    * [Interface Configuration](#interface-configuration)
+        * [Listen on all interfaces (default)](#listen-on-all-interfaces-default)
+        * [Listen on specific interfaces](#listen-on-specific-interfaces)
+        * [Bind to a specific IP address on an interface](#bind-to-a-specific-ip-address-on-an-interface)
+        * [Set the socket type](#set-the-socket-type)
+    * [Dynamic DNS (DDNS)](#dynamic-dns-ddns)
+        * [Basic DDNS Configuration](#basic-ddns-configuration)
+        * [DDNS with TSIG Authentication](#ddns-with-tsig-authentication)
+        * [DDNS Domain Configuration](#ddns-domain-configuration)
+        * [DDNS Behavioral Parameters](#ddns-behavioral-parameters)
+    * [Hiera Example](#hiera-example)
+        * [Inline reservations (default)](#inline-reservations-default)
+        * [PostgreSQL host database](#postgresql-host-database-1)
+        * [DDNS with file-backed TSIG keys](#ddns-with-file-backed-tsig-keys)
+4. [Reference](#reference)
+5. [Limitations](#limitations)
+6. [Development](#development)
 
 ## Description
 
@@ -335,7 +364,11 @@ class { 'kea_dhcp':
 
 #### DDNS with TSIG Authentication
 
-Use TSIG keys to authenticate DNS updates:
+TSIG keys authenticate DNS updates. Two variants are supported: `secret` (inline value) and `secret_file_content` (file-backed).
+
+##### Inline secret
+
+Pass the key material directly. Wrap the value in `Sensitive()` to prevent it from appearing in Puppet reports and logs:
 
 ```puppet
 class { 'kea_dhcp':
@@ -352,10 +385,56 @@ class { 'kea_dhcp':
     {
       'name'      => 'ddns-key',
       'algorithm' => 'HMAC-SHA256',
-      'secret'    => 'LSWXnfkKZjdPJI5QxlpnfQ==',
+      'secret'    => Sensitive('LSWXnfkKZjdPJI5QxlpnfQ=='),
     },
   ],
 }
+```
+
+##### File-backed secret
+
+Use `secret_file_content` to have the module write the key material to a restricted file (`/etc/kea/tsig/<name>.tsig`, owned `root:kea`, mode `0640`). The `kea_ddns_server` resource receives a `secret-file` path instead of the inline value. This is recommended when the key material comes from Hiera eyaml or another secrets manager:
+
+```puppet
+class { 'kea_dhcp':
+  lease_sensitive_db_password => Sensitive('SecurePassword123!'),
+  enable_ddns                 => true,
+
+  dhcp_ddns => {
+    'enable-updates' => true,
+    'server-ip'      => '127.0.0.1',
+    'server-port'    => 53001,
+  },
+
+  ddns_tsig_keys => [
+    {
+      'name'                => 'ddns-key',
+      'algorithm'           => 'HMAC-SHA256',
+      'secret_file_content' => Sensitive('LSWXnfkKZjdPJI5QxlpnfQ=='),
+    },
+  ],
+}
+```
+
+This creates `/etc/kea/tsig/ddns-key.tsig` before the `kea_ddns_server` resource is applied, with `show_diff => false` to suppress the content from Puppet reports.
+
+##### Mixed keys
+
+Both variants may be combined in a single `ddns_tsig_keys` array:
+
+```puppet
+ddns_tsig_keys => [
+  {
+    'name'      => 'inline-key',
+    'algorithm' => 'HMAC-SHA256',
+    'secret'    => Sensitive('abc123=='),
+  },
+  {
+    'name'                => 'file-key',
+    'algorithm'           => 'HMAC-SHA256',
+    'secret_file_content' => Sensitive('LSWXnfkKZjdPJI5QxlpnfQ=='),
+  },
+],
 ```
 
 #### DDNS Domain Configuration
@@ -463,6 +542,24 @@ kea_dhcp::host_database_port: 5432
 kea_dhcp::array_dhcp4_listen_interfaces:
   - 'enp5s0'
   - 'enp6s0'
+```
+
+#### DDNS with file-backed TSIG keys
+
+Use `secret_file_content` in Hiera to store key material alongside other encrypted secrets. The module writes the key to a restricted file on disk so the value is never placed inline in `kea-dhcp-ddns.conf`:
+
+```yaml
+---
+kea_dhcp::lease_sensitive_db_password: ENC[PKCS7,...]
+kea_dhcp::enable_ddns: true
+kea_dhcp::ddns_tsig_keys:
+  - name: 'ddns-key'
+    algorithm: 'HMAC-SHA256'
+    secret_file_content: ENC[PKCS7,...]
+kea_dhcp::dhcp_ddns:
+  enable-updates: true
+  server-ip: '127.0.0.1'
+  server-port: 53001
 ```
 
 ## Reference

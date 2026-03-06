@@ -8,8 +8,8 @@ describe 'Kea_Dhcp::TsigKey' do
   it { is_expected.to allow_value({ 'name' => 'k', 'algorithm' => 'HMAC-MD5', 'secret' => 'abc==' }) }
   it { is_expected.to allow_value({ 'name' => 'k', 'algorithm' => 'HMAC-SHA512', 'secret' => 'abc==' }) }
 
-  # Valid secret-file-content variant
-  it { is_expected.to allow_value({ 'name' => 'k', 'algorithm' => 'HMAC-SHA256', 'secret-file-content' => 'abc==' }) }
+  # Valid secret_file_content variant
+  it { is_expected.to allow_value({ 'name' => 'k', 'algorithm' => 'HMAC-SHA256', 'secret_file_content' => 'abc==' }) }
 
   # Invalid: unknown algorithm
   it { is_expected.not_to allow_value({ 'name' => 'k', 'algorithm' => 'HMAC-INVALID', 'secret' => 'abc==' }) }
@@ -20,7 +20,7 @@ describe 'Kea_Dhcp::TsigKey' do
   # Invalid: missing algorithm
   it { is_expected.not_to allow_value({ 'name' => 'k', 'secret' => 'abc==' }) }
 
-  # Invalid: neither secret nor secret-file-content
+  # Invalid: neither secret nor secret_file_content
   it { is_expected.not_to allow_value({ 'name' => 'k', 'algorithm' => 'HMAC-SHA256' }) }
 
   # Invalid: empty name
@@ -36,7 +36,7 @@ describe 'Kea_Dhcp::TsigKey' do
                                      'name' => 'k',
                                      'algorithm' => 'HMAC-SHA256',
                                      'secret' => 'a',
-                                     'secret-file-content' => 'b',
+                                     'secret_file_content' => 'b',
                                    })
   }
 end

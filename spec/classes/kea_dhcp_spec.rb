@@ -163,7 +163,7 @@ describe 'kea_dhcp' do
         end
       end
 
-      context 'with secret-file-content TSIG keys' do
+      context 'with secret_file_content TSIG keys' do
         let(:params) do
           super().merge(
             enable_ddns: true,
@@ -171,7 +171,7 @@ describe 'kea_dhcp' do
               {
                 'name'                => 'ddns-key',
                 'algorithm'           => 'HMAC-SHA256',
-                'secret-file-content' => 'LSWXnfkKZjdPJI5QxlpnfQ==',
+                'secret_file_content' => 'LSWXnfkKZjdPJI5QxlpnfQ==',
               },
             ],
           )
@@ -211,7 +211,7 @@ describe 'kea_dhcp' do
         end
       end
 
-      context 'with mixed secret and secret-file-content TSIG keys' do
+      context 'with mixed secret and secret_file_content TSIG keys' do
         let(:params) do
           super().merge(
             enable_ddns: true,
@@ -224,7 +224,7 @@ describe 'kea_dhcp' do
               {
                 'name'                => 'file-key',
                 'algorithm'           => 'HMAC-SHA256',
-                'secret-file-content' => 'LSWXnfkKZjdPJI5QxlpnfQ==',
+                'secret_file_content' => 'LSWXnfkKZjdPJI5QxlpnfQ==',
               },
             ],
           )
@@ -232,7 +232,7 @@ describe 'kea_dhcp' do
 
         it { is_expected.to compile.with_all_deps }
 
-        it 'creates file for the secret-file-content key' do
+        it 'creates file for the secret_file_content key' do
           is_expected.to contain_file('/etc/kea/tsig/file-key.tsig').with(
             'ensure' => 'file',
             'owner'  => 'root',

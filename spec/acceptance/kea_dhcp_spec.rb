@@ -364,7 +364,7 @@ describe 'kea_dhcp class on Rocky' do
             {
               'name'                => 'ddns-key',
               'algorithm'           => 'HMAC-SHA256',
-              'secret-file-content' => Sensitive('#{secret_value}'),
+              'secret_file_content' => Sensitive('#{secret_value}'),
             },
           ],
         }

@@ -160,7 +160,7 @@ class kea_dhcp::config (
   }
 
   $tsig_key_dir = '/etc/kea/tsig'
-  $tsig_file_key_entries = $ddns_tsig_keys.filter |$key| { 'secret-file-content' in $key }
+  $tsig_file_key_entries = $ddns_tsig_keys.filter |$key| { 'secret_file_content' in $key }
 
   if $enable_ddns and !$tsig_file_key_entries.empty() {
     file { $tsig_key_dir:
@@ -178,7 +178,7 @@ class kea_dhcp::config (
         owner     => 'root',
         group     => 'kea',
         mode      => '0640',
-        content   => $key['secret-file-content'],
+        content   => $key['secret_file_content'],
         show_diff => false,
         require   => File[$tsig_key_dir],
         before    => Kea_ddns_server['dhcp-ddns'],
@@ -187,7 +187,7 @@ class kea_dhcp::config (
   }
 
   $processed_tsig_keys = $ddns_tsig_keys.map |$key| {
-    if 'secret-file-content' in $key {
+    if 'secret_file_content' in $key {
       {
         'name'        => $key['name'],
         'algorithm'   => $key['algorithm'],
