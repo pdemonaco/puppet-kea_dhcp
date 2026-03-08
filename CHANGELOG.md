@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [0.9.0](https://github.com/pdemonaco/puppet-kea_dhcp/tree/0.9.0) (2026-03-08)
+
+[Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.8.1...0.9.0)
+
+### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
+
+- ddns-secret-updates [\#33](https://github.com/pdemonaco/puppet-kea_dhcp/pull/33) ([pdemonaco](https://github.com/pdemonaco))
+
 ## [0.8.1](https://github.com/pdemonaco/puppet-kea_dhcp/tree/0.8.1) (2026-03-04)
 
 [Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.8.0...0.8.1)
