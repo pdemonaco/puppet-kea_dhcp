@@ -1,6 +1,6 @@
 {
   "name": "pdemon-kea_dhcp",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "author": "Phil DeMonaco",
   "summary": "Installs & configures the ISC Kea DHCP server",
   "license": "MIT",
@@ -25,6 +25,10 @@
     {
       "name": "puppetlabs/augeas_core",
       "version_requirement": ">= 1.0.0 < 2.0.0"
+    },
+    {
+      "name": "puppetlabs/node_encrypt",
+      "version_requirement": ">= 3.0.0 < 4.0.0"
     },
     {
       "name": "puppetlabs/apt",

@@ -30,6 +30,9 @@ fixtures:
     augeas:
       repo: 'puppetlabs/augeas_core'
       ref: '1.5.0'
+    node_encrypt:
+      repo: 'puppetlabs/node_encrypt'
+      ref: '3.1.0'
   repositories:
     facts: 'https://github.com/puppetlabs/puppetlabs-facts.git'
     puppet_agent: 'https://github.com/puppetlabs/puppetlabs-puppet_agent.git'

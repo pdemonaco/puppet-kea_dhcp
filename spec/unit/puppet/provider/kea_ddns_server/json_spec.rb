@@ -86,6 +86,62 @@ describe provider_class do
       )
     end
 
+    it 'unwraps Sensitive secret when writing TSIG keys' do
+      write_config(config_path, 'DhcpDdns' => { 'forward-ddns' => {}, 'reverse-ddns' => {} })
+
+      sensitive_secret = Puppet::Pops::Types::PSensitiveType::Sensitive.new('LSWXnfkKZjdPJI5QxlpnfQ==')
+
+      resource = type_class.new(
+        name: 'dhcp-ddns',
+        config_path: config_path,
+        tsig_keys: [
+          { 'name' => 'foo', 'algorithm' => 'HMAC-MD5', 'secret' => sensitive_secret },
+        ],
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      ddns = config['DhcpDdns']
+
+      expect(ddns['tsig-keys']).to contain_exactly(
+        { 'name' => 'foo', 'algorithm' => 'HMAC-MD5', 'secret' => 'LSWXnfkKZjdPJI5QxlpnfQ==' },
+      )
+    end
+
+    it 'writes TSIG keys with secret-file' do
+      write_config(config_path, 'DhcpDdns' => { 'forward-ddns' => {}, 'reverse-ddns' => {} })
+
+      resource = type_class.new(
+        name: 'dhcp-ddns',
+        config_path: config_path,
+        tsig_keys: [
+          { 'name' => 'foo', 'algorithm' => 'HMAC-MD5', 'secret-file' => '/etc/kea/tsig/foo.tsig' },
+        ],
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      ddns = config['DhcpDdns']
+
+      expect(ddns['tsig-keys']).to contain_exactly(
+        { 'name' => 'foo', 'algorithm' => 'HMAC-MD5', 'secret-file' => '/etc/kea/tsig/foo.tsig' },
+      )
+    end
+
     it 'creates default structure when file does not exist' do
       File.delete(config_path) if File.exist?(config_path)
 

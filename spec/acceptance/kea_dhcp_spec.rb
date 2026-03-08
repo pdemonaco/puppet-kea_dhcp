@@ -348,6 +348,87 @@ describe 'kea_dhcp class on Rocky' do
     end
   end
 
+  describe 'DDNS with secret-file TSIG key' do
+    before(:all) do
+      reset_kea_configs
+    end
+
+    let(:secret_value) { 'LSWXnfkKZjdPJI5QxlpnfQ==' }
+    let(:manifest) do
+      <<~PP
+        class { 'kea_dhcp':
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          enable_ddns                 => true,
+          enable_ctrl_agent           => false,
+          ddns_tsig_keys              => [
+            {
+              'name'                => 'ddns-key',
+              'algorithm'           => 'HMAC-SHA256',
+              'secret_file_content' => Sensitive('#{secret_value}'),
+            },
+          ],
+        }
+      PP
+    end
+
+    it 'applies without failures' do
+      apply_manifest(manifest, catch_failures: true)
+    end
+
+    it 'applies idempotently' do
+      apply_manifest(manifest, catch_changes: true)
+    end
+
+    it 'creates the TSIG key file with restricted permissions' do
+      result = run_shell('stat -c "%a %U %G" /etc/kea/tsig/ddns-key.tsig')
+      expect(result.stdout.strip).to eq('640 root kea')
+    end
+
+    it 'configures kea-dhcp-ddns.conf with secret-file (not secret)' do
+      config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp-ddns.conf').stdout)
+      tsig_keys = config.dig('DhcpDdns', 'tsig-keys')
+
+      expect(tsig_keys).not_to be_nil
+      expect(tsig_keys.length).to eq(1)
+      expect(tsig_keys[0]['name']).to eq('ddns-key')
+      expect(tsig_keys[0]).to have_key('secret-file')
+      expect(tsig_keys[0]).not_to have_key('secret')
+      expect(tsig_keys[0]['secret-file']).to eq('/etc/kea/tsig/ddns-key.tsig')
+    end
+
+    it 'does not expose TSIG secrets in provider debug messages' do
+      # Puppet itself may log property values in debug output. This test checks
+      # that the provider's own debug messages (kea_ddns_server and kea-dhcp-ddns
+      # commit lines) do not contain the raw secret.
+      run_shell(<<~BASH)
+        cat > /tmp/kea_tsig_debug_test.pp << 'PPEOF'
+        class { 'kea_dhcp':
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          enable_ddns                 => true,
+          enable_ctrl_agent           => false,
+          ddns_tsig_keys              => [
+            {
+              'name'      => 'ddns-key',
+              'algorithm' => 'HMAC-SHA256',
+              'secret'    => 'LSWXnfkKZjdPJI5QxlpnfQ==',
+            },
+          ],
+        }
+        PPEOF
+      BASH
+
+      result = run_shell('puppet apply --debug /tmp/kea_tsig_debug_test.pp 2>&1 || true')
+
+      # Filter to provider-specific debug lines
+      provider_lines = result.stdout.lines.select do |line|
+        line.include?('kea_ddns_server') || line.include?('kea-dhcp-ddns committing')
+      end
+      expect(provider_lines.join).not_to include('LSWXnfkKZjdPJI5QxlpnfQ==')
+    ensure
+      run_shell('rm -f /tmp/kea_tsig_debug_test.pp', expect_failures: true)
+    end
+  end
+
   describe 'host database configuration' do
     before(:all) do
       reset_kea_configs

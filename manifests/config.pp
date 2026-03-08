@@ -90,7 +90,7 @@ class kea_dhcp::config (
   Integer[1] $ddns_server_timeout = $kea_dhcp::ddns_server_timeout,
   Enum['UDP', 'TCP'] $ddns_ncr_protocol = $kea_dhcp::ddns_ncr_protocol,
   Enum['JSON'] $ddns_ncr_format = $kea_dhcp::ddns_ncr_format,
-  Array[Hash] $ddns_tsig_keys = $kea_dhcp::ddns_tsig_keys,
+  Array[Kea_Dhcp::TsigKey] $ddns_tsig_keys = $kea_dhcp::ddns_tsig_keys,
   Kea_Dhcp::Backends $lease_backend = $kea_dhcp::lease_backend,
   Enum['postgresql', 'json'] $host_backend = $kea_dhcp::host_backend,
   Optional[Sensitive[String]] $host_sensitive_db_password = $kea_dhcp::host_sensitive_db_password,
@@ -159,6 +159,45 @@ class kea_dhcp::config (
     * => $final_params,
   }
 
+  $tsig_key_dir = '/etc/kea/tsig'
+  $tsig_file_key_entries = $ddns_tsig_keys.filter |$key| { 'secret_file_content' in $key }
+
+  if $enable_ddns and !$tsig_file_key_entries.empty() {
+    file { $tsig_key_dir:
+      ensure => directory,
+      owner  => 'root',
+      group  => 'kea',
+      mode   => '0750',
+      before => Kea_ddns_server['dhcp-ddns'],
+    }
+
+    $tsig_file_key_entries.each |$key| {
+      $key_name = $key['name']
+      file { "${tsig_key_dir}/${key_name}.tsig":
+        ensure    => file,
+        owner     => 'root',
+        group     => 'kea',
+        mode      => '0640',
+        content   => $key['secret_file_content'],
+        show_diff => false,
+        require   => File[$tsig_key_dir],
+        before    => Kea_ddns_server['dhcp-ddns'],
+      }
+    }
+  }
+
+  $processed_tsig_keys = $ddns_tsig_keys.map |$key| {
+    if 'secret_file_content' in $key {
+      {
+        'name'        => $key['name'],
+        'algorithm'   => $key['algorithm'],
+        'secret-file' => "${tsig_key_dir}/${key['name']}.tsig",
+      }
+    } else {
+      $key
+    }
+  }
+
   if $enable_ddns {
     kea_ddns_server { 'dhcp-ddns':
       ensure             => present,
@@ -167,7 +206,7 @@ class kea_dhcp::config (
       dns_server_timeout => $ddns_server_timeout,
       ncr_protocol       => $ddns_ncr_protocol,
       ncr_format         => $ddns_ncr_format,
-      tsig_keys          => $ddns_tsig_keys,
+      tsig_keys          => $processed_tsig_keys,
     }
   }
 }
