@@ -41,7 +41,7 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
   end
 
   def self.scope_to_resource_hash(scope, path = self::DEFAULT_CONFIG_PATH)
-    {
+    hash = {
       ensure: :present,
       name: scope_name(scope),
       id: scope['id'],
@@ -52,6 +52,9 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
       end,
       config_path: path,
     }
+    hash[:ddns_qualifying_suffix] = scope['ddns-qualifying-suffix'] if scope.key?('ddns-qualifying-suffix')
+    hash[:ddns_update_on_renew] = scope['ddns-update-on-renew'].to_s.to_sym if scope.key?('ddns-update-on-renew')
+    hash
   end
 
   def self.find_scope(scopes, name, id)
@@ -96,12 +99,30 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
     @property_flush[:options] = value
   end
 
+  def ddns_qualifying_suffix
+    @property_hash[:ddns_qualifying_suffix]
+  end
+
+  def ddns_qualifying_suffix=(value)
+    @property_flush[:ddns_qualifying_suffix] = value
+  end
+
+  def ddns_update_on_renew
+    @property_hash[:ddns_update_on_renew]
+  end
+
+  def ddns_update_on_renew=(value)
+    @property_flush[:ddns_update_on_renew] = value
+  end
+
   def create
     @property_flush[:ensure] = :present
     @property_flush[:id] = resource[:id]
     @property_flush[:subnet] = resource[:subnet]
     @property_flush[:pools] = resource[:pools] || []
     @property_flush[:options] = resource[:options] || []
+    @property_flush[:ddns_qualifying_suffix] = resource[:ddns_qualifying_suffix] if resource[:ddns_qualifying_suffix]
+    @property_flush[:ddns_update_on_renew] = resource[:ddns_update_on_renew] if resource[:ddns_update_on_renew]
   end
 
   def destroy
@@ -150,6 +171,20 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
     entry['pools'] = Array(value_for(:pools)).map { |pool| { 'pool' => pool } }
     entry['option-data'] = Array(value_for(:options)).map do |option|
       option.transform_keys(&:to_s)
+    end
+
+    qs = value_for(:ddns_qualifying_suffix)
+    if qs
+      entry['ddns-qualifying-suffix'] = qs
+    else
+      entry.delete('ddns-qualifying-suffix')
+    end
+
+    uor = value_for(:ddns_update_on_renew)
+    if uor
+      entry['ddns-update-on-renew'] = (uor.to_s == 'true')
+    else
+      entry.delete('ddns-update-on-renew')
     end
 
     if scope

@@ -59,6 +59,8 @@ The following parameters are available in the `kea_dhcp` class:
 * [`ddns_server_timeout`](#-kea_dhcp--ddns_server_timeout)
 * [`ddns_ncr_protocol`](#-kea_dhcp--ddns_ncr_protocol)
 * [`ddns_ncr_format`](#-kea_dhcp--ddns_ncr_format)
+* [`ddns_qualifying_suffix`](#-kea_dhcp--ddns_qualifying_suffix)
+* [`ddns_update_on_renew`](#-kea_dhcp--ddns_update_on_renew)
 * [`ddns_tsig_keys`](#-kea_dhcp--ddns_tsig_keys)
 * [`lease_database_name`](#-kea_dhcp--lease_database_name)
 * [`lease_database_user`](#-kea_dhcp--lease_database_user)
@@ -205,6 +207,22 @@ Format for DDNS server communication (JSON).
 
 Default value: `'JSON'`
 
+##### <a name="-kea_dhcp--ddns_qualifying_suffix"></a>`ddns_qualifying_suffix`
+
+Data type: `Optional[Stdlib::Fqdn]`
+
+Qualifying suffix appended to partial domain names for DDNS updates. Optional.
+
+Default value: `undef`
+
+##### <a name="-kea_dhcp--ddns_update_on_renew"></a>`ddns_update_on_renew`
+
+Data type: `Optional[Boolean]`
+
+When true, update DNS on lease renewal even if FQDN is unchanged. Optional.
+
+Default value: `undef`
+
 ##### <a name="-kea_dhcp--ddns_tsig_keys"></a>`ddns_tsig_keys`
 
 Data type: `Array[Kea_Dhcp::TsigKey]`
@@ -321,6 +339,8 @@ The following parameters are available in the `kea_dhcp::config` class:
 * [`ddns_server_timeout`](#-kea_dhcp--config--ddns_server_timeout)
 * [`ddns_ncr_protocol`](#-kea_dhcp--config--ddns_ncr_protocol)
 * [`ddns_ncr_format`](#-kea_dhcp--config--ddns_ncr_format)
+* [`ddns_qualifying_suffix`](#-kea_dhcp--config--ddns_qualifying_suffix)
+* [`ddns_update_on_renew`](#-kea_dhcp--config--ddns_update_on_renew)
 * [`ddns_tsig_keys`](#-kea_dhcp--config--ddns_tsig_keys)
 * [`lease_backend`](#-kea_dhcp--config--lease_backend)
 * [`host_backend`](#-kea_dhcp--config--host_backend)
@@ -457,6 +477,22 @@ Data type: `Enum['JSON']`
 DDNS communication format.
 
 Default value: `$kea_dhcp::ddns_ncr_format`
+
+##### <a name="-kea_dhcp--config--ddns_qualifying_suffix"></a>`ddns_qualifying_suffix`
+
+Data type: `Optional[Stdlib::Fqdn]`
+
+Qualifying suffix appended to partial domain names for DDNS updates. Optional.
+
+Default value: `$kea_dhcp::ddns_qualifying_suffix`
+
+##### <a name="-kea_dhcp--config--ddns_update_on_renew"></a>`ddns_update_on_renew`
+
+Data type: `Optional[Boolean]`
+
+When true, update DNS on lease renewal even if FQDN is unchanged. Optional.
+
+Default value: `$kea_dhcp::ddns_update_on_renew`
 
 ##### <a name="-kea_dhcp--config--ddns_tsig_keys"></a>`ddns_tsig_keys`
 
@@ -992,6 +1028,16 @@ Manages DHCPv4 subnets within the Kea kea-dhcp4.json configuration file.
 
 The following properties are available in the `kea_dhcp_v4_scope` type.
 
+##### `ddns_qualifying_suffix`
+
+The qualifying suffix appended to partial domain names when generating FQDN for DDNS updates.
+
+##### `ddns_update_on_renew`
+
+Valid values: `true`, `false`
+
+When true, instructs the server to update DNS on lease renewal even when the FQDN has not changed.
+
 ##### `ensure`
 
 Valid values: `present`, `absent`
@@ -1054,6 +1100,16 @@ Manages Kea DHCPv4 server level configuration.
 #### Properties
 
 The following properties are available in the `kea_dhcp_v4_server` type.
+
+##### `ddns_qualifying_suffix`
+
+The qualifying suffix appended to partial domain names when generating FQDN for DDNS updates.
+
+##### `ddns_update_on_renew`
+
+Valid values: `true`, `false`
+
+When true, instructs the server to update DNS on lease renewal even when the FQDN has not changed.
 
 ##### `dhcp_ddns`
 
@@ -1253,10 +1309,12 @@ Utility type for declaring multiple scopes
 Alias of
 
 ```puppet
-Struct[subnet            => Stdlib::IP::Address::V4::CIDR,
-  Optional[id]      => Variant[Integer[0], Enum['auto']],
-  Optional[options] => Array[Hash],
-  Optional[pools]   => Array[String]]
+Struct[subnet                          => Stdlib::IP::Address::V4::CIDR,
+  Optional[id]                    => Variant[Integer[0], Enum['auto']],
+  Optional[options]               => Array[Hash],
+  Optional[pools]                 => Array[String],
+  Optional[ddns_qualifying_suffix] => Stdlib::Fqdn,
+  Optional[ddns_update_on_renew]  => Boolean]
 ```
 
 #### Parameters

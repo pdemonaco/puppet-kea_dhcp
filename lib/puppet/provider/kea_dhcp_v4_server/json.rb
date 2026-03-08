@@ -41,11 +41,13 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       server_section.key?(self::OPTION_DATA_KEY) ||
       server_section.key?(self::HOOKS_LIBRARIES_KEY) ||
       server_section.key?('dhcp-ddns') ||
-      server_section.key?('interfaces-config')
+      server_section.key?('interfaces-config') ||
+      server_section.key?('ddns-qualifying-suffix') ||
+      server_section.key?('ddns-update-on-renew')
   end
 
   def self.resource_hash(server_section, path)
-    {
+    hash = {
       ensure: :present,
       name: self::SERVER_INSTANCE_NAME,
       options: Array(server_section[self::OPTION_DATA_KEY]).map { |opt| stringify_keys(opt) },
@@ -56,6 +58,9 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       interfaces_config: stringify_keys(server_section['interfaces-config']),
       config_path: path,
     }
+    hash[:ddns_qualifying_suffix] = server_section['ddns-qualifying-suffix'] if server_section.key?('ddns-qualifying-suffix')
+    hash[:ddns_update_on_renew] = server_section['ddns-update-on-renew'].to_s.to_sym if server_section.key?('ddns-update-on-renew')
+    hash
   end
 
   def self.deep_stringify_keys(hash)
@@ -114,6 +119,22 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
     @property_flush[:interfaces_config] = value
   end
 
+  def ddns_qualifying_suffix
+    @property_hash[:ddns_qualifying_suffix]
+  end
+
+  def ddns_qualifying_suffix=(value)
+    @property_flush[:ddns_qualifying_suffix] = value
+  end
+
+  def ddns_update_on_renew
+    @property_hash[:ddns_update_on_renew]
+  end
+
+  def ddns_update_on_renew=(value)
+    @property_flush[:ddns_update_on_renew] = value
+  end
+
   def create
     @property_flush[:ensure] = :present
     @property_flush[:options] = resource[:options] || []
@@ -122,6 +143,8 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
     @property_flush[:host_database] = resource[:host_database] || {}
     @property_flush[:dhcp_ddns] = resource[:dhcp_ddns] || {}
     @property_flush[:interfaces_config] = resource[:interfaces_config] || { 'interfaces' => ['*'] }
+    @property_flush[:ddns_qualifying_suffix] = resource[:ddns_qualifying_suffix] if resource[:ddns_qualifying_suffix]
+    @property_flush[:ddns_update_on_renew] = resource[:ddns_update_on_renew] if resource[:ddns_update_on_renew]
   end
 
   def destroy
@@ -158,6 +181,8 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       dhcp4.delete(self.class::HOST_DATABASE_KEY)
       dhcp4.delete('dhcp-ddns')
       dhcp4.delete('interfaces-config')
+      dhcp4.delete('ddns-qualifying-suffix')
+      dhcp4.delete('ddns-update-on-renew')
       ensure_state = :absent
     else
       dhcp4[self.class::OPTION_DATA_KEY] = Array(value_for(:options)).map { |opt| stringify_keys(opt) }
@@ -185,6 +210,21 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       dhcp4['dhcp-ddns'] = ddns_config unless ddns_config.empty?
       interfaces_cfg = stringify_keys(value_for(:interfaces_config))
       dhcp4['interfaces-config'] = interfaces_cfg unless interfaces_cfg.empty?
+
+      qs = value_for(:ddns_qualifying_suffix)
+      if qs
+        dhcp4['ddns-qualifying-suffix'] = qs
+      else
+        dhcp4.delete('ddns-qualifying-suffix')
+      end
+
+      uor = value_for(:ddns_update_on_renew)
+      if uor
+        dhcp4['ddns-update-on-renew'] = (uor.to_s == 'true')
+      else
+        dhcp4.delete('ddns-update-on-renew')
+      end
+
       ensure_state = :present
     end
 

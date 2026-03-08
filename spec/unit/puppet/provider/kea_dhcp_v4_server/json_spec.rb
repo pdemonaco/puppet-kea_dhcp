@@ -870,4 +870,94 @@ describe provider_class do
       expect(config.dig('Dhcp4', 'hosts-database')).not_to be_nil
     end
   end
+
+  context 'when creating server configuration with ddns_qualifying_suffix' do
+    it 'writes ddns-qualifying-suffix to the config file' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        ddns_qualifying_suffix: 'example.org',
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config.dig('Dhcp4', 'ddns-qualifying-suffix')).to eq('example.org')
+    end
+
+    it 'omits ddns-qualifying-suffix when not provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('ddns-qualifying-suffix')
+    end
+  end
+
+  context 'when creating server configuration with ddns_update_on_renew' do
+    it 'writes ddns-update-on-renew true to the config file' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        ddns_update_on_renew: true,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config.dig('Dhcp4', 'ddns-update-on-renew')).to be(true)
+    end
+
+    it 'omits ddns-update-on-renew when not provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('ddns-update-on-renew')
+    end
+  end
 end

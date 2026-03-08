@@ -48,6 +48,12 @@
 # @param ddns_ncr_format
 #   DDNS communication format.
 #
+# @param ddns_qualifying_suffix
+#   Qualifying suffix appended to partial domain names for DDNS updates. Optional.
+#
+# @param ddns_update_on_renew
+#   When true, update DNS on lease renewal even if FQDN is unchanged. Optional.
+#
 # @param ddns_tsig_keys
 #   TSIG keys for DNS authentication.
 #
@@ -90,6 +96,8 @@ class kea_dhcp::config (
   Integer[1] $ddns_server_timeout = $kea_dhcp::ddns_server_timeout,
   Enum['UDP', 'TCP'] $ddns_ncr_protocol = $kea_dhcp::ddns_ncr_protocol,
   Enum['JSON'] $ddns_ncr_format = $kea_dhcp::ddns_ncr_format,
+  Optional[Stdlib::Fqdn] $ddns_qualifying_suffix = $kea_dhcp::ddns_qualifying_suffix,
+  Optional[Boolean] $ddns_update_on_renew = $kea_dhcp::ddns_update_on_renew,
   Array[Kea_Dhcp::TsigKey] $ddns_tsig_keys = $kea_dhcp::ddns_tsig_keys,
   Kea_Dhcp::Backends $lease_backend = $kea_dhcp::lease_backend,
   Enum['postgresql', 'json'] $host_backend = $kea_dhcp::host_backend,
@@ -150,9 +158,19 @@ class kea_dhcp::config (
     default => $base_server_params + { host_database => $host_database },
   }
 
-  $final_params = $dhcp_ddns ? {
+  $with_ddns_conn = $dhcp_ddns ? {
     undef   => $with_host_db,
     default => $with_host_db + { dhcp_ddns => $dhcp_ddns },
+  }
+
+  $with_qs = $ddns_qualifying_suffix ? {
+    undef   => $with_ddns_conn,
+    default => $with_ddns_conn + { ddns_qualifying_suffix => $ddns_qualifying_suffix },
+  }
+
+  $final_params = $ddns_update_on_renew ? {
+    undef   => $with_qs,
+    default => $with_qs + { ddns_update_on_renew => $ddns_update_on_renew },
   }
 
   kea_dhcp_v4_server { 'dhcp4':
