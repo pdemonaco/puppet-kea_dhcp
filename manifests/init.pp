@@ -56,6 +56,12 @@
 # @param ddns_ncr_format
 #   Format for DDNS server communication (JSON).
 #
+# @param ddns_qualifying_suffix
+#   Qualifying suffix appended to partial domain names for DDNS updates. Optional.
+#
+# @param ddns_update_on_renew
+#   When true, update DNS on lease renewal even if FQDN is unchanged. Optional.
+#
 # @param ddns_tsig_keys
 #   Array of TSIG key configurations for DNS update authentication.
 #
@@ -108,6 +114,8 @@ class kea_dhcp (
   Integer[1] $ddns_server_timeout = 500,
   Enum['UDP', 'TCP'] $ddns_ncr_protocol = 'UDP',
   Enum['JSON'] $ddns_ncr_format = 'JSON',
+  Optional[Stdlib::Fqdn] $ddns_qualifying_suffix = undef,
+  Optional[Boolean] $ddns_update_on_renew = undef,
   Array[Kea_Dhcp::TsigKey] $ddns_tsig_keys = [],
   String $lease_database_name = 'kea',
   String $lease_database_user = 'kea',

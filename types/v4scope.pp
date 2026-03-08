@@ -14,8 +14,10 @@
 #   Optional array of pool definitions. Each entry can be a CIDR (e.g., '10.0.0.0/28')
 #   or an IPv4 range (e.g., '10.0.0.1 - 10.0.0.254')
 type Kea_Dhcp::V4Scope = Struct[
-  subnet            => Stdlib::IP::Address::V4::CIDR,
-  Optional[id]      => Variant[Integer[0], Enum['auto']],
-  Optional[options] => Array[Hash],
-  Optional[pools]   => Array[String],
+  subnet                          => Stdlib::IP::Address::V4::CIDR,
+  Optional[id]                    => Variant[Integer[0], Enum['auto']],
+  Optional[options]               => Array[Hash],
+  Optional[pools]                 => Array[String],
+  Optional[ddns_qualifying_suffix] => Stdlib::Fqdn,
+  Optional[ddns_update_on_renew]  => Boolean,
 ]

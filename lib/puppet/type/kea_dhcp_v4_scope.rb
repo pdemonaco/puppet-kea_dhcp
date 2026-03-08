@@ -83,6 +83,33 @@ Puppet::Type.newtype(:kea_dhcp_v4_scope) do
     end
   end
 
+  newproperty(:ddns_qualifying_suffix) do
+    desc 'The qualifying suffix appended to partial domain names when generating FQDN for DDNS updates.'
+
+    validate do |value|
+      unless value.is_a?(String) && value.match?(%r{\A[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.?\z})
+        raise ArgumentError, "ddns_qualifying_suffix must be a valid FQDN, got #{value.inspect}"
+      end
+    end
+  end
+
+  newproperty(:ddns_update_on_renew) do
+    desc 'When true, instructs the server to update DNS on lease renewal even when the FQDN has not changed.'
+    newvalues(:true, :false)
+
+    def insync?(is)
+      is.to_s == should.to_s
+    end
+
+    munge do |value|
+      case value
+      when true, 'true', :true then :true
+      when false, 'false', :false then :false
+      else raise ArgumentError, "ddns_update_on_renew must be a boolean, got #{value.inspect}"
+      end
+    end
+  end
+
   autorequire(:file) do
     [self[:config_path]]
   end
