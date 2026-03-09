@@ -112,12 +112,14 @@ class kea_dhcp::config (
     default      => [],
   }
 
+  $lease_cmd_hooks = [{ 'library' => '/usr/lib64/kea/hooks/libdhcp_lease_cmds.so' }]
+
   $host_hooks = $host_backend ? {
     'postgresql' => [{ 'library' => '/usr/lib64/kea/hooks/libdhcp_host_cmds.so' }],
     default      => [],
   }
 
-  $hooks_libraries = $lease_hooks + $host_hooks
+  $hooks_libraries = $lease_hooks + $host_hooks + $lease_cmd_hooks
 
   $base_interfaces_config = { 'interfaces' => $listen_interfaces }
   $interfaces_config = $dhcp4_socket_type ? {
