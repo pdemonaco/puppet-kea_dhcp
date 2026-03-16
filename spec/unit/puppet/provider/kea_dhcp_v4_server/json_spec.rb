@@ -407,6 +407,137 @@ describe provider_class do
     end
   end
 
+  context 'when creating server configuration with lease lifetime parameters' do
+    it 'writes valid-lifetime when provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        valid_lifetime: 86_000,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['valid-lifetime']).to eq(86_000)
+    end
+
+    it 'writes default valid-lifetime of 3600 when not specified' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['valid-lifetime']).to eq(3600)
+    end
+
+    it 'writes renew-timer when provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        renew_timer: 43_000,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['renew-timer']).to eq(43_000)
+    end
+
+    it 'omits renew-timer when not provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('renew-timer')
+    end
+
+    it 'writes rebind-timer when provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+        rebind_timer: 3600,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['rebind-timer']).to eq(3600)
+    end
+
+    it 'omits rebind-timer when not provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        lease_database: lease_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']).not_to have_key('rebind-timer')
+    end
+  end
+
   context 'when destroying server configuration' do
     it 'removes the option and lease database keys' do
       write_config(

@@ -43,7 +43,10 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       server_section.key?('dhcp-ddns') ||
       server_section.key?('interfaces-config') ||
       server_section.key?('ddns-qualifying-suffix') ||
-      server_section.key?('ddns-update-on-renew')
+      server_section.key?('ddns-update-on-renew') ||
+      server_section.key?('valid-lifetime') ||
+      server_section.key?('renew-timer') ||
+      server_section.key?('rebind-timer')
   end
 
   def self.resource_hash(server_section, path)
@@ -60,6 +63,9 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
     }
     hash[:ddns_qualifying_suffix] = server_section['ddns-qualifying-suffix'] if server_section.key?('ddns-qualifying-suffix')
     hash[:ddns_update_on_renew] = server_section['ddns-update-on-renew'].to_s.to_sym if server_section.key?('ddns-update-on-renew')
+    hash[:valid_lifetime] = server_section['valid-lifetime'] if server_section.key?('valid-lifetime')
+    hash[:renew_timer] = server_section['renew-timer'] if server_section.key?('renew-timer')
+    hash[:rebind_timer] = server_section['rebind-timer'] if server_section.key?('rebind-timer')
     hash
   end
 
@@ -135,6 +141,30 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
     @property_flush[:ddns_update_on_renew] = value
   end
 
+  def valid_lifetime
+    @property_hash[:valid_lifetime]
+  end
+
+  def valid_lifetime=(value)
+    @property_flush[:valid_lifetime] = value
+  end
+
+  def renew_timer
+    @property_hash[:renew_timer]
+  end
+
+  def renew_timer=(value)
+    @property_flush[:renew_timer] = value
+  end
+
+  def rebind_timer
+    @property_hash[:rebind_timer]
+  end
+
+  def rebind_timer=(value)
+    @property_flush[:rebind_timer] = value
+  end
+
   def create
     @property_flush[:ensure] = :present
     @property_flush[:options] = resource[:options] || []
@@ -145,6 +175,9 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
     @property_flush[:interfaces_config] = resource[:interfaces_config] || { 'interfaces' => ['*'] }
     @property_flush[:ddns_qualifying_suffix] = resource[:ddns_qualifying_suffix] if resource[:ddns_qualifying_suffix]
     @property_flush[:ddns_update_on_renew] = resource[:ddns_update_on_renew] if resource[:ddns_update_on_renew]
+    @property_flush[:valid_lifetime] = resource[:valid_lifetime] if resource[:valid_lifetime]
+    @property_flush[:renew_timer] = resource[:renew_timer] if resource[:renew_timer]
+    @property_flush[:rebind_timer] = resource[:rebind_timer] if resource[:rebind_timer]
   end
 
   def destroy
@@ -183,6 +216,9 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
       dhcp4.delete('interfaces-config')
       dhcp4.delete('ddns-qualifying-suffix')
       dhcp4.delete('ddns-update-on-renew')
+      dhcp4.delete('valid-lifetime')
+      dhcp4.delete('renew-timer')
+      dhcp4.delete('rebind-timer')
       ensure_state = :absent
     else
       dhcp4[self.class::OPTION_DATA_KEY] = Array(value_for(:options)).map { |opt| stringify_keys(opt) }
@@ -223,6 +259,27 @@ Puppet::Type.type(:kea_dhcp_v4_server).provide(:json, parent: PuppetX::KeaDhcp::
         dhcp4['ddns-update-on-renew'] = (uor.to_s == 'true')
       else
         dhcp4.delete('ddns-update-on-renew')
+      end
+
+      vl = value_for(:valid_lifetime)
+      if vl
+        dhcp4['valid-lifetime'] = vl
+      else
+        dhcp4.delete('valid-lifetime')
+      end
+
+      rt = value_for(:renew_timer)
+      if rt
+        dhcp4['renew-timer'] = rt
+      else
+        dhcp4.delete('renew-timer')
+      end
+
+      rbt = value_for(:rebind_timer)
+      if rbt
+        dhcp4['rebind-timer'] = rbt
+      else
+        dhcp4.delete('rebind-timer')
       end
 
       ensure_state = :present

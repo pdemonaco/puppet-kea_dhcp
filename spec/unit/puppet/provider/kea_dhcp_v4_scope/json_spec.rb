@@ -291,4 +291,97 @@ describe provider_class do
       expect(scope).not_to have_key('ddns-update-on-renew')
     end
   end
+
+  context 'when creating a scope with lease lifetime parameters' do
+    it 'writes valid-lifetime to the scope entry' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'lifetime_scope',
+        subnet: '10.5.0.0/24',
+        config_path: config_path,
+        valid_lifetime: 86_000,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      scope = config['Dhcp4']['subnet4'].first
+      expect(scope['valid-lifetime']).to eq(86_000)
+    end
+
+    it 'omits valid-lifetime when not provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'plain_scope2',
+        subnet: '10.6.0.0/24',
+        config_path: config_path,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      scope = config['Dhcp4']['subnet4'].first
+      expect(scope).not_to have_key('valid-lifetime')
+    end
+
+    it 'writes renew-timer to the scope entry' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'renew_scope',
+        subnet: '10.7.0.0/24',
+        config_path: config_path,
+        renew_timer: 3600,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      scope = config['Dhcp4']['subnet4'].first
+      expect(scope['renew-timer']).to eq(3600)
+    end
+
+    it 'writes rebind-timer to the scope entry' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'rebind_scope',
+        subnet: '10.8.0.0/24',
+        config_path: config_path,
+        rebind_timer: 43_000,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      scope = config['Dhcp4']['subnet4'].first
+      expect(scope['rebind-timer']).to eq(43_000)
+    end
+  end
 end

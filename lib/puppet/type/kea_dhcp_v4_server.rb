@@ -275,6 +275,37 @@ Puppet::Type.newtype(:kea_dhcp_v4_server) do
     private :stringify_keys
   end
 
+  newproperty(:valid_lifetime) do
+    desc 'The valid lifetime of leases issued by this server in seconds. Defaults to 3600.'
+    defaultto(3600)
+
+    munge do |value|
+      Integer(value)
+    rescue ArgumentError, TypeError
+      raise ArgumentError, "valid_lifetime must be an integer, got #{value.inspect}"
+    end
+  end
+
+  newproperty(:renew_timer) do
+    desc 'The T1 timer (renew timer) in seconds. Optional; absent if not set.'
+
+    munge do |value|
+      Integer(value)
+    rescue ArgumentError, TypeError
+      raise ArgumentError, "renew_timer must be an integer, got #{value.inspect}"
+    end
+  end
+
+  newproperty(:rebind_timer) do
+    desc 'The T2 timer (rebind timer) in seconds. Optional; absent if not set.'
+
+    munge do |value|
+      Integer(value)
+    rescue ArgumentError, TypeError
+      raise ArgumentError, "rebind_timer must be an integer, got #{value.inspect}"
+    end
+  end
+
   newproperty(:ddns_qualifying_suffix) do
     desc 'The qualifying suffix appended to partial domain names when generating FQDN for DDNS updates.'
 

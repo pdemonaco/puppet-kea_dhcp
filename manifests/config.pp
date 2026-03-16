@@ -54,6 +54,15 @@
 # @param ddns_update_on_renew
 #   When true, update DNS on lease renewal even if FQDN is unchanged. Optional.
 #
+# @param valid_lifetime
+#   Valid lifetime of leases in seconds. Defaults to 3600.
+#
+# @param renew_timer
+#   T1 timer (renew timer) in seconds. Optional.
+#
+# @param rebind_timer
+#   T2 timer (rebind timer) in seconds. Optional.
+#
 # @param ddns_tsig_keys
 #   TSIG keys for DNS authentication.
 #
@@ -98,6 +107,9 @@ class kea_dhcp::config (
   Enum['JSON'] $ddns_ncr_format = $kea_dhcp::ddns_ncr_format,
   Optional[Stdlib::Fqdn] $ddns_qualifying_suffix = $kea_dhcp::ddns_qualifying_suffix,
   Optional[Boolean] $ddns_update_on_renew = $kea_dhcp::ddns_update_on_renew,
+  Integer[0] $valid_lifetime = $kea_dhcp::valid_lifetime,
+  Optional[Integer[0]] $renew_timer = $kea_dhcp::renew_timer,
+  Optional[Integer[0]] $rebind_timer = $kea_dhcp::rebind_timer,
   Array[Kea_Dhcp::TsigKey] $ddns_tsig_keys = $kea_dhcp::ddns_tsig_keys,
   Kea_Dhcp::Backends $lease_backend = $kea_dhcp::lease_backend,
   Enum['postgresql', 'json'] $host_backend = $kea_dhcp::host_backend,
@@ -133,6 +145,7 @@ class kea_dhcp::config (
     options           => $server_options,
     hooks_libraries   => $hooks_libraries,
     interfaces_config => $interfaces_config,
+    valid_lifetime    => $valid_lifetime,
     lease_database    => {
       'type'     => 'postgresql',
       'name'     => $lease_database_name,
@@ -170,9 +183,19 @@ class kea_dhcp::config (
     default => $with_ddns_conn + { ddns_qualifying_suffix => $ddns_qualifying_suffix },
   }
 
-  $final_params = $ddns_update_on_renew ? {
+  $with_uor = $ddns_update_on_renew ? {
     undef   => $with_qs,
     default => $with_qs + { ddns_update_on_renew => $ddns_update_on_renew },
+  }
+
+  $with_renew = $renew_timer ? {
+    undef   => $with_uor,
+    default => $with_uor + { renew_timer => $renew_timer },
+  }
+
+  $final_params = $rebind_timer ? {
+    undef   => $with_renew,
+    default => $with_renew + { rebind_timer => $rebind_timer },
   }
 
   kea_dhcp_v4_server { 'dhcp4':

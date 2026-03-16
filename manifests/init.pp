@@ -62,6 +62,15 @@
 # @param ddns_update_on_renew
 #   When true, update DNS on lease renewal even if FQDN is unchanged. Optional.
 #
+# @param valid_lifetime
+#   Valid lifetime of leases in seconds. Defaults to 3600.
+#
+# @param renew_timer
+#   T1 timer (renew timer) in seconds. Optional.
+#
+# @param rebind_timer
+#   T2 timer (rebind timer) in seconds. Optional.
+#
 # @param ddns_tsig_keys
 #   Array of TSIG key configurations for DNS update authentication.
 #
@@ -116,6 +125,9 @@ class kea_dhcp (
   Enum['JSON'] $ddns_ncr_format = 'JSON',
   Optional[Stdlib::Fqdn] $ddns_qualifying_suffix = undef,
   Optional[Boolean] $ddns_update_on_renew = undef,
+  Integer[0] $valid_lifetime = 3600,
+  Optional[Integer[0]] $renew_timer = undef,
+  Optional[Integer[0]] $rebind_timer = undef,
   Array[Kea_Dhcp::TsigKey] $ddns_tsig_keys = [],
   String $lease_database_name = 'kea',
   String $lease_database_user = 'kea',

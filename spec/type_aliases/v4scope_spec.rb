@@ -108,4 +108,26 @@ describe 'Kea_Dhcp::V4Scope' do
     'options' => 'not-an-array',
                                    })
   }
+
+  it {
+    is_expected.to allow_value({
+                                 'subnet' => '192.0.2.0/24',
+    'valid_lifetime' => 86_000,
+                               })
+  }
+
+  it {
+    is_expected.to allow_value({
+                                 'subnet' => '192.0.2.0/24',
+    'renew_timer' => 43_000,
+    'rebind_timer' => 3600,
+                               })
+  }
+
+  it {
+    is_expected.not_to allow_value({
+                                     'subnet' => '192.0.2.0/24',
+    'valid_lifetime' => -1,
+                                   })
+  }
 end
