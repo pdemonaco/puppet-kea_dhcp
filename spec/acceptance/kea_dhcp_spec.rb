@@ -469,4 +469,84 @@ describe 'kea_dhcp class on Rocky' do
       expect(libraries).to include('/usr/lib64/kea/hooks/libdhcp_host_cmds.so')
     end
   end
+
+  describe 'DDNS behavioral parameters' do
+    before(:all) do
+      reset_kea_configs
+    end
+
+    let(:manifest) do
+      <<~PP
+        class { 'kea_dhcp':
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          enable_ddns                 => false,
+          enable_ctrl_agent           => false,
+          ddns_qualifying_suffix      => 'example.org',
+          ddns_update_on_renew        => true,
+        }
+      PP
+    end
+
+    it 'applies the manifest idempotently' do
+      apply_manifest(manifest, catch_failures: true)
+      apply_manifest(manifest, catch_changes: true)
+    end
+
+    it 'writes ddns-qualifying-suffix to kea-dhcp4.conf' do
+      config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp4.conf').stdout)
+      expect(config.dig('Dhcp4', 'ddns-qualifying-suffix')).to eq('example.org')
+    end
+
+    it 'writes ddns-update-on-renew to kea-dhcp4.conf' do
+      config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp4.conf').stdout)
+      expect(config.dig('Dhcp4', 'ddns-update-on-renew')).to be(true)
+    end
+  end
+
+  describe 'DDNS behavioral parameters at scope level' do
+    before(:all) do
+      reset_kea_configs
+      base_manifest = <<~PP
+        class { 'kea_dhcp':
+          lease_sensitive_db_password => Sensitive('LitmusP@ssw0rd!'),
+          enable_ddns                 => false,
+          enable_ctrl_agent           => false,
+        }
+      PP
+      apply_manifest(base_manifest, catch_failures: true)
+    end
+
+    let(:manifest) do
+      <<~PP
+        kea_dhcp_v4_scope { 'ddns-test-scope':
+          ensure                  => present,
+          subnet                  => '192.0.2.0/24',
+          pools                   => ['192.0.2.10 - 192.0.2.200'],
+          ddns_qualifying_suffix  => 'example.org',
+          ddns_update_on_renew    => true,
+        }
+      PP
+    end
+
+    it 'applies the manifest idempotently' do
+      apply_manifest(manifest, catch_failures: true)
+      apply_manifest(manifest, catch_changes: true)
+    end
+
+    it 'writes ddns-qualifying-suffix to the scope entry' do
+      config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp4.conf').stdout)
+      scope = Array(config.dig('Dhcp4', 'subnet4')).find { |s| s.dig('user-context', 'puppet_name') == 'ddns-test-scope' }
+
+      expect(scope).not_to be_nil
+      expect(scope['ddns-qualifying-suffix']).to eq('example.org')
+    end
+
+    it 'writes ddns-update-on-renew to the scope entry' do
+      config = JSON.parse(run_shell('cat /etc/kea/kea-dhcp4.conf').stdout)
+      scope = Array(config.dig('Dhcp4', 'subnet4')).find { |s| s.dig('user-context', 'puppet_name') == 'ddns-test-scope' }
+
+      expect(scope).not_to be_nil
+      expect(scope['ddns-update-on-renew']).to be(true)
+    end
+  end
 end

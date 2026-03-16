@@ -464,4 +464,60 @@ describe Puppet::Type.type(:kea_dhcp_v4_server) do
       expect(relationship.target).to eq(server)
     end
   end
+
+  describe 'ddns_qualifying_suffix property' do
+    it 'accepts a valid FQDN' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        ddns_qualifying_suffix: 'example.org',
+      )
+
+      expect(resource[:ddns_qualifying_suffix]).to eq('example.org')
+    end
+
+    it 'rejects an invalid value' do
+      expect {
+        described_class.new(
+          name: 'dhcp4',
+          lease_database: base_lease_db,
+          ddns_qualifying_suffix: 'not a valid fqdn!',
+        )
+      }.to raise_error(Puppet::ResourceError, %r{ddns_qualifying_suffix must be a valid FQDN})
+    end
+
+    it 'defaults to absent (nil)' do
+      resource = described_class.new(name: 'dhcp4', lease_database: base_lease_db)
+
+      expect(resource[:ddns_qualifying_suffix]).to be_nil
+    end
+  end
+
+  describe 'ddns_update_on_renew property' do
+    it 'accepts true' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        ddns_update_on_renew: true,
+      )
+
+      expect(resource[:ddns_update_on_renew]).to eq(:true)
+    end
+
+    it 'accepts false' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        ddns_update_on_renew: false,
+      )
+
+      expect(resource[:ddns_update_on_renew]).to eq(:false)
+    end
+
+    it 'defaults to absent (nil)' do
+      resource = described_class.new(name: 'dhcp4', lease_database: base_lease_db)
+
+      expect(resource[:ddns_update_on_renew]).to be_nil
+    end
+  end
 end

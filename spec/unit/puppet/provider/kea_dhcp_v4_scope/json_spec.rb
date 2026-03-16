@@ -197,4 +197,98 @@ describe provider_class do
       expect(config['Dhcp4']['subnet4']).to be_empty
     end
   end
+
+  context 'when creating a scope with ddns_qualifying_suffix' do
+    it 'writes ddns-qualifying-suffix to the scope entry' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'ddns_scope',
+        subnet: '10.1.0.0/24',
+        config_path: config_path,
+        ddns_qualifying_suffix: 'example.org',
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      scope = config['Dhcp4']['subnet4'].first
+      expect(scope['ddns-qualifying-suffix']).to eq('example.org')
+    end
+
+    it 'omits ddns-qualifying-suffix when not provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'plain_scope',
+        subnet: '10.2.0.0/24',
+        config_path: config_path,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      scope = config['Dhcp4']['subnet4'].first
+      expect(scope).not_to have_key('ddns-qualifying-suffix')
+    end
+  end
+
+  context 'when creating a scope with ddns_update_on_renew' do
+    it 'writes ddns-update-on-renew true to the scope entry' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'ddns_renew_scope',
+        subnet: '10.3.0.0/24',
+        config_path: config_path,
+        ddns_update_on_renew: true,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      scope = config['Dhcp4']['subnet4'].first
+      expect(scope['ddns-update-on-renew']).to be(true)
+    end
+
+    it 'omits ddns-update-on-renew when not provided' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'no_renew_scope',
+        subnet: '10.4.0.0/24',
+        config_path: config_path,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      scope = config['Dhcp4']['subnet4'].first
+      expect(scope).not_to have_key('ddns-update-on-renew')
+    end
+  end
 end

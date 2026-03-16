@@ -92,4 +92,60 @@ describe Puppet::Type.type(:kea_dhcp_v4_scope) do
       }.to raise_error(Puppet::ResourceError, %r{Pool entries must be a CIDR or IPv4 range})
     end
   end
+
+  describe 'ddns_qualifying_suffix property' do
+    it 'accepts a valid FQDN' do
+      resource = described_class.new(
+        name: 'test_scope',
+        subnet: '10.0.0.0/24',
+        ddns_qualifying_suffix: 'example.org',
+      )
+
+      expect(resource[:ddns_qualifying_suffix]).to eq('example.org')
+    end
+
+    it 'rejects an invalid value' do
+      expect {
+        described_class.new(
+          name: 'test_scope',
+          subnet: '10.0.0.0/24',
+          ddns_qualifying_suffix: 'not valid!',
+        )
+      }.to raise_error(Puppet::ResourceError, %r{ddns_qualifying_suffix must be a valid FQDN})
+    end
+
+    it 'defaults to absent (nil)' do
+      resource = described_class.new(name: 'test_scope', subnet: '10.0.0.0/24')
+
+      expect(resource[:ddns_qualifying_suffix]).to be_nil
+    end
+  end
+
+  describe 'ddns_update_on_renew property' do
+    it 'accepts true' do
+      resource = described_class.new(
+        name: 'test_scope',
+        subnet: '10.0.0.0/24',
+        ddns_update_on_renew: true,
+      )
+
+      expect(resource[:ddns_update_on_renew]).to eq(:true)
+    end
+
+    it 'accepts false' do
+      resource = described_class.new(
+        name: 'test_scope',
+        subnet: '10.0.0.0/24',
+        ddns_update_on_renew: false,
+      )
+
+      expect(resource[:ddns_update_on_renew]).to eq(:false)
+    end
+
+    it 'defaults to absent (nil)' do
+      resource = described_class.new(name: 'test_scope', subnet: '10.0.0.0/24')
+
+      expect(resource[:ddns_update_on_renew]).to be_nil
+    end
+  end
 end

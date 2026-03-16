@@ -32,6 +32,8 @@
         * [DDNS with TSIG Authentication](#ddns-with-tsig-authentication)
         * [DDNS Domain Configuration](#ddns-domain-configuration)
         * [DDNS Behavioral Parameters](#ddns-behavioral-parameters)
+        * [Server-level behavioral parameters](#server-level-behavioral-parameters)
+        * [Per-scope behavioral parameters](#per-scope-behavioral-parameters)
     * [Hiera Example](#hiera-example)
         * [Inline reservations (default)](#inline-reservations-default)
         * [PostgreSQL host database](#postgresql-host-database-1)
@@ -487,28 +489,73 @@ kea_ddns_domain { '2.0.192.in-addr.arpa.':
 
 #### DDNS Behavioral Parameters
 
-Control DDNS behavior at the DHCPv4 server level:
+##### Server-level behavioral parameters
+
+`ddns_qualifying_suffix` and `ddns_update_on_renew` are top-level `kea_dhcp` class parameters that are written as global `Dhcp4` keys in `kea-dhcp4.conf`. They are distinct from the `dhcp_ddns` connectivity hash and are omitted from the config file when not set.
 
 ```puppet
 class { 'kea_dhcp':
   lease_sensitive_db_password => Sensitive('SecurePassword123!'),
+  enable_ddns                 => true,
   dhcp_ddns => {
-    'enable-updates'                => true,
-    'server-ip'                     => '127.0.0.1',
-    'server-port'                   => 53001,
-
-    # Behavioral settings
-    'ddns-send-updates'             => true,
-    'ddns-override-no-update'       => false,
-    'ddns-override-client-update'   => false,
-    'ddns-replace-client-name'      => 'never',
-    'ddns-generated-prefix'         => 'myhost',
-    'ddns-qualifying-suffix'        => '',
-    'ddns-update-on-renew'          => false,
-    'ddns-conflict-resolution-mode' => 'check-with-dhcid',
+    'enable-updates' => true,
+    'server-ip'      => '127.0.0.1',
+    'server-port'    => 53001,
   },
+  ddns_qualifying_suffix => 'example.org',
+  ddns_update_on_renew   => true,
 }
 ```
+
+This produces the following in `kea-dhcp4.conf`:
+
+```json
+{
+  "Dhcp4": {
+    "dhcp-ddns": {
+      "enable-updates": true,
+      "server-ip": "127.0.0.1",
+      "server-port": 53001
+    },
+    "ddns-qualifying-suffix": "example.org",
+    "ddns-update-on-renew": true
+  }
+}
+```
+
+Other behavioral parameters (`ddns-send-updates`, `ddns-override-no-update`, `ddns-replace-client-name`, `ddns-conflict-resolution-mode`, etc.) may be passed inside the `dhcp_ddns` hash as Kea accepts them within that block.
+
+##### Per-scope behavioral parameters
+
+`ddns_qualifying_suffix` and `ddns_update_on_renew` may also be set on individual `kea_dhcp_v4_scope` resources to override the server-level defaults for a specific subnet:
+
+```puppet
+kea_dhcp_v4_scope { 'subnet-a':
+  subnet                 => '192.0.2.0/24',
+  pools                  => ['192.0.2.10 - 192.0.2.200'],
+  options                => [
+    { name => 'routers', data => '192.0.2.1' },
+  ],
+  ddns_qualifying_suffix => 'example.org',
+  ddns_update_on_renew   => true,
+}
+```
+
+This produces the following scope entry in `kea-dhcp4.conf`:
+
+```json
+{
+  "user-context": { "puppet_name": "subnet-a" },
+  "subnet": "192.0.2.0/24",
+  "id": 1,
+  "pools": [{ "pool": "192.0.2.10 - 192.0.2.200" }],
+  "option-data": [{ "name": "routers", "data": "192.0.2.1" }],
+  "ddns-qualifying-suffix": "example.org",
+  "ddns-update-on-renew": true
+}
+```
+
+When either parameter is absent from the resource declaration it is omitted from the config entirely, allowing the server-level default (or Kea's built-in default) to apply.
 
 The DDNS server configuration is managed centrally through the `kea_dhcp` class. The module automatically creates the `kea_ddns_server` resource when `enable_ddns` is true, following the same pattern as the DHCPv4 server configuration.
 
