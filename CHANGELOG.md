@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [0.11.0](https://github.com/pdemonaco/puppet-kea_dhcp/tree/0.11.0) (2026-03-20)
+
+[Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.10.0...0.11.0)
+
+### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
+
+- valid-lifetime & t1/t2 timers [\#37](https://github.com/pdemonaco/puppet-kea_dhcp/pull/37) ([pdemonaco](https://github.com/pdemonaco))
+
 ## [0.10.0](https://github.com/pdemonaco/puppet-kea_dhcp/tree/0.10.0) (2026-03-16)
 
 [Full Changelog](https://github.com/pdemonaco/puppet-kea_dhcp/compare/0.9.0...0.10.0)
