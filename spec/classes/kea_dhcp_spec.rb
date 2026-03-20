@@ -66,6 +66,7 @@ describe 'kea_dhcp' do
           'config_path' => '/etc/kea/kea-dhcp4.conf',
           'options' => [],
           'interfaces_config' => { 'interfaces' => ['*'] },
+          'valid_lifetime' => 3600,
         )
 
         lease_database = catalogue.resource('Kea_dhcp_v4_server', 'dhcp4')[:lease_database]
@@ -79,6 +80,31 @@ describe 'kea_dhcp' do
         )
         expect(lease_database['password']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
         expect(lease_database['password'].unwrap).to eq('kea_password')
+      end
+
+      context 'with valid_lifetime set' do
+        let(:params) do
+          super().merge(valid_lifetime: 86_000)
+        end
+
+        it 'passes valid_lifetime to the DHCPv4 server resource' do
+          is_expected.to contain_kea_dhcp_v4_server('dhcp4').with(
+            'valid_lifetime' => 86_000,
+          )
+        end
+      end
+
+      context 'with renew_timer and rebind_timer set' do
+        let(:params) do
+          super().merge(renew_timer: 43_000, rebind_timer: 3600)
+        end
+
+        it 'passes renew_timer and rebind_timer to the DHCPv4 server resource' do
+          is_expected.to contain_kea_dhcp_v4_server('dhcp4').with(
+            'renew_timer' => 43_000,
+            'rebind_timer' => 3600,
+          )
+        end
       end
 
       context 'with explicit listen interfaces' do

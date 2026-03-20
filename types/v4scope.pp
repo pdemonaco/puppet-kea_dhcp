@@ -20,4 +20,7 @@ type Kea_Dhcp::V4Scope = Struct[
   Optional[pools]                 => Array[String],
   Optional[ddns_qualifying_suffix] => Stdlib::Fqdn,
   Optional[ddns_update_on_renew]  => Boolean,
+  Optional[valid_lifetime]        => Integer[0],
+  Optional[renew_timer]           => Integer[0],
+  Optional[rebind_timer]          => Integer[0],
 ]

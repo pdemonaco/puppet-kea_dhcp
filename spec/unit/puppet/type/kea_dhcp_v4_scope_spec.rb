@@ -93,6 +93,66 @@ describe Puppet::Type.type(:kea_dhcp_v4_scope) do
     end
   end
 
+  describe 'valid_lifetime property' do
+    it 'defaults to absent (nil)' do
+      resource = described_class.new(name: 'test_scope', subnet: '10.0.0.0/24')
+
+      expect(resource[:valid_lifetime]).to be_nil
+    end
+
+    it 'accepts an integer value' do
+      resource = described_class.new(name: 'test_scope', subnet: '10.0.0.0/24', valid_lifetime: 86_000)
+
+      expect(resource[:valid_lifetime]).to eq(86_000)
+    end
+
+    it 'rejects non-integer values' do
+      expect {
+        described_class.new(name: 'test_scope', subnet: '10.0.0.0/24', valid_lifetime: 'forever')
+      }.to raise_error(Puppet::ResourceError, %r{valid_lifetime must be an integer})
+    end
+  end
+
+  describe 'renew_timer property' do
+    it 'defaults to absent (nil)' do
+      resource = described_class.new(name: 'test_scope', subnet: '10.0.0.0/24')
+
+      expect(resource[:renew_timer]).to be_nil
+    end
+
+    it 'accepts an integer value' do
+      resource = described_class.new(name: 'test_scope', subnet: '10.0.0.0/24', renew_timer: 3600)
+
+      expect(resource[:renew_timer]).to eq(3600)
+    end
+
+    it 'rejects non-integer values' do
+      expect {
+        described_class.new(name: 'test_scope', subnet: '10.0.0.0/24', renew_timer: 'soon')
+      }.to raise_error(Puppet::ResourceError, %r{renew_timer must be an integer})
+    end
+  end
+
+  describe 'rebind_timer property' do
+    it 'defaults to absent (nil)' do
+      resource = described_class.new(name: 'test_scope', subnet: '10.0.0.0/24')
+
+      expect(resource[:rebind_timer]).to be_nil
+    end
+
+    it 'accepts an integer value' do
+      resource = described_class.new(name: 'test_scope', subnet: '10.0.0.0/24', rebind_timer: 43_000)
+
+      expect(resource[:rebind_timer]).to eq(43_000)
+    end
+
+    it 'rejects non-integer values' do
+      expect {
+        described_class.new(name: 'test_scope', subnet: '10.0.0.0/24', rebind_timer: 'late')
+      }.to raise_error(Puppet::ResourceError, %r{rebind_timer must be an integer})
+    end
+  end
+
   describe 'ddns_qualifying_suffix property' do
     it 'accepts a valid FQDN' do
       resource = described_class.new(

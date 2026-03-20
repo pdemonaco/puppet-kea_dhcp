@@ -16,6 +16,10 @@
 #   Whether to manage the PostgreSQL package repository.
 # @param instance_port
 #   The port number for the PostgreSQL instance to listen on.
+# @param instance_host
+#   Hostname or IP address used to connect to the PostgreSQL instance for schema
+#   initialization and health checks. Must match the TCP listen address of the
+#   PostgreSQL server. Defaults to 127.0.0.1.
 # @param install_mode
 #   Controls how the database is installed:
 #   - 'instance': Create a dedicated PostgreSQL instance
@@ -28,6 +32,7 @@ class kea_dhcp::install::postgresql (
   String $database_user = $kea_dhcp::lease_database_user,
   Sensitive[String] $lease_sensitive_db_password = $kea_dhcp::lease_sensitive_db_password,
   Boolean $manage_package_repo = true,
+  Stdlib::Host $instance_host = '127.0.0.1',
   Stdlib::Port $instance_port = $kea_dhcp::lease_database_port,
   Kea_Dhcp::Db_install_mode $install_mode = $kea_dhcp::install::install_mode,
 ) {
@@ -35,8 +40,8 @@ class kea_dhcp::install::postgresql (
 
   $plain_db_password = $lease_sensitive_db_password.unwrap
   $kea_unless = @("CMD"/L)
-    /usr/bin/psql -p ${instance_port} -d ${database_name} \
-    -tAc "SELECT 1 FROM schema_version;" | \
+    /usr/bin/psql -h ${instance_host} -p ${instance_port} -U ${database_user} \
+    -d ${database_name} -tAc "SELECT 1 FROM schema_version;" 2>/dev/null | \
     /usr/bin/grep -q 1
     |-CMD
 
@@ -108,7 +113,7 @@ class kea_dhcp::install::postgresql (
   }
 
   exec { 'init_kea_dhcp_schema':
-    command     => "/usr/sbin/kea-admin db-init pgsql -u ${database_user} -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P ${instance_port} -n ${database_name}",
+    command     => "/usr/sbin/kea-admin db-init pgsql -u ${database_user} -p \"\${PGPASSWORD}\" -h ${instance_host} -P ${instance_port} -n ${database_name}",
     unless      => $kea_unless,
     path        => ['/usr/bin', '/usr/sbin', '/bin', '/sbin'],
     environment => ["PGPASSWORD=${plain_db_password}"],

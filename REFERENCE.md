@@ -61,6 +61,9 @@ The following parameters are available in the `kea_dhcp` class:
 * [`ddns_ncr_format`](#-kea_dhcp--ddns_ncr_format)
 * [`ddns_qualifying_suffix`](#-kea_dhcp--ddns_qualifying_suffix)
 * [`ddns_update_on_renew`](#-kea_dhcp--ddns_update_on_renew)
+* [`valid_lifetime`](#-kea_dhcp--valid_lifetime)
+* [`renew_timer`](#-kea_dhcp--renew_timer)
+* [`rebind_timer`](#-kea_dhcp--rebind_timer)
 * [`ddns_tsig_keys`](#-kea_dhcp--ddns_tsig_keys)
 * [`lease_database_name`](#-kea_dhcp--lease_database_name)
 * [`lease_database_user`](#-kea_dhcp--lease_database_user)
@@ -223,6 +226,30 @@ When true, update DNS on lease renewal even if FQDN is unchanged. Optional.
 
 Default value: `undef`
 
+##### <a name="-kea_dhcp--valid_lifetime"></a>`valid_lifetime`
+
+Data type: `Integer[0]`
+
+Valid lifetime of leases in seconds. Defaults to 3600.
+
+Default value: `3600`
+
+##### <a name="-kea_dhcp--renew_timer"></a>`renew_timer`
+
+Data type: `Optional[Integer[0]]`
+
+T1 timer (renew timer) in seconds. Optional.
+
+Default value: `undef`
+
+##### <a name="-kea_dhcp--rebind_timer"></a>`rebind_timer`
+
+Data type: `Optional[Integer[0]]`
+
+T2 timer (rebind timer) in seconds. Optional.
+
+Default value: `undef`
+
 ##### <a name="-kea_dhcp--ddns_tsig_keys"></a>`ddns_tsig_keys`
 
 Data type: `Array[Kea_Dhcp::TsigKey]`
@@ -341,6 +368,9 @@ The following parameters are available in the `kea_dhcp::config` class:
 * [`ddns_ncr_format`](#-kea_dhcp--config--ddns_ncr_format)
 * [`ddns_qualifying_suffix`](#-kea_dhcp--config--ddns_qualifying_suffix)
 * [`ddns_update_on_renew`](#-kea_dhcp--config--ddns_update_on_renew)
+* [`valid_lifetime`](#-kea_dhcp--config--valid_lifetime)
+* [`renew_timer`](#-kea_dhcp--config--renew_timer)
+* [`rebind_timer`](#-kea_dhcp--config--rebind_timer)
 * [`ddns_tsig_keys`](#-kea_dhcp--config--ddns_tsig_keys)
 * [`lease_backend`](#-kea_dhcp--config--lease_backend)
 * [`host_backend`](#-kea_dhcp--config--host_backend)
@@ -494,6 +524,30 @@ When true, update DNS on lease renewal even if FQDN is unchanged. Optional.
 
 Default value: `$kea_dhcp::ddns_update_on_renew`
 
+##### <a name="-kea_dhcp--config--valid_lifetime"></a>`valid_lifetime`
+
+Data type: `Integer[0]`
+
+Valid lifetime of leases in seconds. Defaults to 3600.
+
+Default value: `$kea_dhcp::valid_lifetime`
+
+##### <a name="-kea_dhcp--config--renew_timer"></a>`renew_timer`
+
+Data type: `Optional[Integer[0]]`
+
+T1 timer (renew timer) in seconds. Optional.
+
+Default value: `$kea_dhcp::renew_timer`
+
+##### <a name="-kea_dhcp--config--rebind_timer"></a>`rebind_timer`
+
+Data type: `Optional[Integer[0]]`
+
+T2 timer (rebind timer) in seconds. Optional.
+
+Default value: `$kea_dhcp::rebind_timer`
+
 ##### <a name="-kea_dhcp--config--ddns_tsig_keys"></a>`ddns_tsig_keys`
 
 Data type: `Array[Kea_Dhcp::TsigKey]`
@@ -602,6 +656,7 @@ The following parameters are available in the `kea_dhcp::install::postgresql` cl
 * [`lease_sensitive_db_password`](#-kea_dhcp--install--postgresql--lease_sensitive_db_password)
 * [`manage_package_repo`](#-kea_dhcp--install--postgresql--manage_package_repo)
 * [`instance_port`](#-kea_dhcp--install--postgresql--instance_port)
+* [`instance_host`](#-kea_dhcp--install--postgresql--instance_host)
 * [`install_mode`](#-kea_dhcp--install--postgresql--install_mode)
 
 ##### <a name="-kea_dhcp--install--postgresql--database_name"></a>`database_name`
@@ -661,6 +716,16 @@ Data type: `Stdlib::Port`
 The port number for the PostgreSQL instance to listen on.
 
 Default value: `$kea_dhcp::lease_database_port`
+
+##### <a name="-kea_dhcp--install--postgresql--instance_host"></a>`instance_host`
+
+Data type: `Stdlib::Host`
+
+Hostname or IP address used to connect to the PostgreSQL instance for schema
+initialization and health checks. Must match the TCP listen address of the
+PostgreSQL server. Defaults to 127.0.0.1.
+
+Default value: `'127.0.0.1'`
 
 ##### <a name="-kea_dhcp--install--postgresql--install_mode"></a>`install_mode`
 
@@ -1064,9 +1129,21 @@ Array of pool definitions. Each entry is passed directly to Kea.
 
 Default value: `[]`
 
+##### `rebind_timer`
+
+The T2 timer (rebind timer) in seconds for this scope. Optional; absent if not set.
+
+##### `renew_timer`
+
+The T1 timer (renew timer) in seconds for this scope. Optional; absent if not set.
+
 ##### `subnet`
 
 CIDR representation of the subnet (mandatory).
+
+##### `valid_lifetime`
+
+The valid lifetime of leases for this scope in seconds. Optional; absent if not set.
 
 #### Parameters
 
@@ -1148,6 +1225,20 @@ Lease database configuration. Currently only the PostgreSQL backend is supported
 Array of DHCP option hashes applied at the server level (name, data, etc).
 
 Default value: `[]`
+
+##### `rebind_timer`
+
+The T2 timer (rebind timer) in seconds. Optional; absent if not set.
+
+##### `renew_timer`
+
+The T1 timer (renew timer) in seconds. Optional; absent if not set.
+
+##### `valid_lifetime`
+
+The valid lifetime of leases issued by this server in seconds. Defaults to 3600.
+
+Default value: `3600`
 
 #### Parameters
 
@@ -1314,7 +1405,10 @@ Struct[subnet                          => Stdlib::IP::Address::V4::CIDR,
   Optional[options]               => Array[Hash],
   Optional[pools]                 => Array[String],
   Optional[ddns_qualifying_suffix] => Stdlib::Fqdn,
-  Optional[ddns_update_on_renew]  => Boolean]
+  Optional[ddns_update_on_renew]  => Boolean,
+  Optional[valid_lifetime]        => Integer[0],
+  Optional[renew_timer]           => Integer[0],
+  Optional[rebind_timer]          => Integer[0]]
 ```
 
 #### Parameters

@@ -54,6 +54,9 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
     }
     hash[:ddns_qualifying_suffix] = scope['ddns-qualifying-suffix'] if scope.key?('ddns-qualifying-suffix')
     hash[:ddns_update_on_renew] = scope['ddns-update-on-renew'].to_s.to_sym if scope.key?('ddns-update-on-renew')
+    hash[:valid_lifetime] = scope['valid-lifetime'] if scope.key?('valid-lifetime')
+    hash[:renew_timer] = scope['renew-timer'] if scope.key?('renew-timer')
+    hash[:rebind_timer] = scope['rebind-timer'] if scope.key?('rebind-timer')
     hash
   end
 
@@ -115,6 +118,30 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
     @property_flush[:ddns_update_on_renew] = value
   end
 
+  def valid_lifetime
+    @property_hash[:valid_lifetime]
+  end
+
+  def valid_lifetime=(value)
+    @property_flush[:valid_lifetime] = value
+  end
+
+  def renew_timer
+    @property_hash[:renew_timer]
+  end
+
+  def renew_timer=(value)
+    @property_flush[:renew_timer] = value
+  end
+
+  def rebind_timer
+    @property_hash[:rebind_timer]
+  end
+
+  def rebind_timer=(value)
+    @property_flush[:rebind_timer] = value
+  end
+
   def create
     @property_flush[:ensure] = :present
     @property_flush[:id] = resource[:id]
@@ -123,6 +150,9 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
     @property_flush[:options] = resource[:options] || []
     @property_flush[:ddns_qualifying_suffix] = resource[:ddns_qualifying_suffix] if resource[:ddns_qualifying_suffix]
     @property_flush[:ddns_update_on_renew] = resource[:ddns_update_on_renew] if resource[:ddns_update_on_renew]
+    @property_flush[:valid_lifetime] = resource[:valid_lifetime] if resource[:valid_lifetime]
+    @property_flush[:renew_timer] = resource[:renew_timer] if resource[:renew_timer]
+    @property_flush[:rebind_timer] = resource[:rebind_timer] if resource[:rebind_timer]
   end
 
   def destroy
@@ -185,6 +215,27 @@ Puppet::Type.type(:kea_dhcp_v4_scope).provide(:json, parent: PuppetX::KeaDhcp::P
       entry['ddns-update-on-renew'] = (uor.to_s == 'true')
     else
       entry.delete('ddns-update-on-renew')
+    end
+
+    vl = value_for(:valid_lifetime)
+    if vl
+      entry['valid-lifetime'] = vl
+    else
+      entry.delete('valid-lifetime')
+    end
+
+    rt = value_for(:renew_timer)
+    if rt
+      entry['renew-timer'] = rt
+    else
+      entry.delete('renew-timer')
+    end
+
+    rbt = value_for(:rebind_timer)
+    if rbt
+      entry['rebind-timer'] = rbt
+    else
+      entry.delete('rebind-timer')
     end
 
     if scope

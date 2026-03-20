@@ -557,6 +557,45 @@ This produces the following scope entry in `kea-dhcp4.conf`:
 
 When either parameter is absent from the resource declaration it is omitted from the config entirely, allowing the server-level default (or Kea's built-in default) to apply.
 
+#### Lease Lifetime Parameters
+
+`valid_lifetime`, `renew_timer`, and `rebind_timer` control how long leases are valid and when clients should renew or rebind.
+
+At the server level, `valid_lifetime` defaults to `3600` seconds (1 hour). `renew_timer` and `rebind_timer` are optional and omitted if not set.
+
+```puppet
+class { 'kea_dhcp':
+  lease_sensitive_db_password => Sensitive('SecurePassword123!'),
+  valid_lifetime => 86000,
+  renew_timer    => 43000,
+  rebind_timer   => 3600,
+}
+```
+
+This produces the following in `kea-dhcp4.conf`:
+
+```json
+{
+  "Dhcp4": {
+    "valid-lifetime": 86000,
+    "renew-timer": 43000,
+    "rebind-timer": 3600
+  }
+}
+```
+
+At the scope level, all three parameters are optional. When set, they override the server-level defaults for that subnet:
+
+```puppet
+kea_dhcp_v4_scope { 'subnet-a':
+  subnet         => '192.0.2.0/24',
+  pools          => ['192.0.2.10 - 192.0.2.200'],
+  valid_lifetime => 86000,
+  renew_timer    => 3600,
+  rebind_timer   => 43000,
+}
+```
+
 The DDNS server configuration is managed centrally through the `kea_dhcp` class. The module automatically creates the `kea_ddns_server` resource when `enable_ddns` is true, following the same pattern as the DHCPv4 server configuration.
 
 ### Hiera Example

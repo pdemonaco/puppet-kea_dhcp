@@ -107,8 +107,8 @@ describe 'kea_dhcp::install::postgresql' do
     end
 
     it do
-      unless_cmd = "/usr/bin/psql -p #{instance_port} -d #{database_name} " \
-                   '-tAc "SELECT 1 FROM schema_version;" | /usr/bin/grep -q 1'
+      unless_cmd = "/usr/bin/psql -h 127.0.0.1 -p #{instance_port} -U #{database_user} " \
+                   "-d #{database_name} -tAc \"SELECT 1 FROM schema_version;\" 2>/dev/null | /usr/bin/grep -q 1"
       is_expected.to contain_exec('init_kea_dhcp_schema').with(
         'command' => "/usr/sbin/kea-admin db-init pgsql -u #{database_user} -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P #{instance_port} -n #{database_name}",
         'unless' => unless_cmd,
@@ -134,8 +134,8 @@ describe 'kea_dhcp::install::postgresql' do
     end
 
     it do
-      unless_cmd = "/usr/bin/psql -p #{instance_port} -d #{database_name} " \
-                   '-tAc "SELECT 1 FROM schema_version;" | /usr/bin/grep -q 1'
+      unless_cmd = "/usr/bin/psql -h 127.0.0.1 -p #{instance_port} -U #{database_user} " \
+                   "-d #{database_name} -tAc \"SELECT 1 FROM schema_version;\" 2>/dev/null | /usr/bin/grep -q 1"
       is_expected.to contain_exec('init_kea_dhcp_schema').with(
         'command' => "/usr/sbin/kea-admin db-init pgsql -u #{database_user} -p \"\${PGPASSWORD}\" -h 127.0.0.1 -P #{instance_port} -n #{database_name}",
         'unless' => unless_cmd,
