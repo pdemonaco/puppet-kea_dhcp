@@ -69,6 +69,36 @@ describe Puppet::Type.type(:kea_dhcp_v4_scope) do
     expect(resource[:options]).to eq([{ 'name' => 'routers', 'data' => '10.0.0.1' }])
   end
 
+  it 'joins array data values as CSV' do
+    resource = described_class.new(
+      name: 'array_option',
+      subnet: '10.0.0.0/24',
+      options: [{ 'name' => 'domain-name-servers', 'data' => ['1.1.1.1', '8.8.8.8'] }],
+    )
+
+    expect(resource[:options]).to eq([{ 'name' => 'domain-name-servers', 'data' => '1.1.1.1, 8.8.8.8' }])
+  end
+
+  it 'escapes commas in string data values' do
+    resource = described_class.new(
+      name: 'comma_option',
+      subnet: '10.0.0.0/24',
+      options: [{ 'name' => 'boot-file-name', 'data' => 'foo,bar' }],
+    )
+
+    expect(resource[:options]).to eq([{ 'name' => 'boot-file-name', 'data' => 'foo\,bar' }])
+  end
+
+  it 'converts symbol keys to strings in options' do
+    resource = described_class.new(
+      name: 'sym_option',
+      subnet: '10.0.0.0/24',
+      options: [{ name: 'routers', data: '10.0.0.1' }],
+    )
+
+    expect(resource[:options]).to eq([{ 'name' => 'routers', 'data' => '10.0.0.1' }])
+  end
+
   context 'when validating pools' do
     it 'accepts CIDR and range entries with spaces around the hyphen' do
       resource = described_class.new(

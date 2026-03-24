@@ -17,6 +17,7 @@
         * [Existing default PostgreSQL instance](#existing-default-postgresql-instance)
         * [Externally managed database](#externally-managed-database)
     * [Defining Subnets](#defining-subnets)
+        * [Options with multiple values](#options-with-multiple-values)
     * [Host Reservations](#host-reservations)
     * [Host Reservation Backend](#host-reservation-backend)
         * [Inline storage (default)](#inline-storage-default)
@@ -165,7 +166,9 @@ kea_dhcp_v4_scope { 'subnet-a':
   subnet  => '192.0.2.0/24',
   pools   => ['192.0.2.10 - 192.0.2.200'],
   options => [
-    { name => 'routers', data => '192.0.2.1' },
+    { name => 'routers',            data => '192.0.2.1' },
+    { name => 'domain-name-servers', data => ['192.0.2.53', '192.0.2.54'] },
+    { name => 'domain-name',         data => 'example.org' },
   ],
 }
 
@@ -179,6 +182,52 @@ kea_dhcp_v4_scope { 'subnet-b':
 ```
 
 Multiple scopes are aggregated into a single configuration file. The provider preserves unmanaged keys in the configuration, allowing manual additions to coexist with Puppet-managed resources.
+
+#### Options with multiple values
+
+The `data` field of any option entry accepts either a string or an array of strings.
+
+- **Array** — values are joined with `", "` to form a CSV string, which is the format Kea expects when `csv-format` is true (the default for standard options):
+
+```puppet
+kea_dhcp_v4_scope { 'subnet-a':
+  subnet  => '192.0.2.0/24',
+  pools   => ['192.0.2.10 - 192.0.2.200'],
+  options => [
+    { name => 'domain-name-servers', data => ['1.1.1.1', '8.8.8.8'] },
+  ],
+}
+```
+
+Produces the following in `kea-dhcp4.conf`:
+
+```json
+"option-data": [
+  { "name": "domain-name-servers", "data": "1.1.1.1, 8.8.8.8" }
+]
+```
+
+- **String containing a literal comma** — the comma is escaped as `\,` so Kea does not split the value into multiple fields:
+
+```puppet
+kea_dhcp_v4_scope { 'subnet-a':
+  subnet  => '192.0.2.0/24',
+  pools   => ['192.0.2.10 - 192.0.2.200'],
+  options => [
+    { name => 'boot-file-name', data => 'pxelinux.cfg,default' },
+  ],
+}
+```
+
+Produces:
+
+```json
+"option-data": [
+  { "name": "boot-file-name", "data": "pxelinux.cfg\,default" }
+]
+```
+
+The same rules apply to options on `kea_dhcp_v4_server` (server-level) and the `array_dhcp4_server_options` class parameter.
 
 ### Host Reservations
 
@@ -611,7 +660,9 @@ kea_dhcp::array_dhcp4_listen_interfaces:
   - 'enp6s0'
 kea_dhcp::array_dhcp4_server_options:
   - name: 'domain-name-servers'
-    data: '8.8.8.8, 8.8.4.4'
+    data:
+      - '8.8.8.8'
+      - '8.8.4.4'
   - name: 'domain-name'
     data: 'example.org'
 ```

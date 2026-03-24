@@ -101,6 +101,36 @@ describe Puppet::Type.type(:kea_dhcp_v4_server) do
 
       expect(resource[:options]).to eq([{ 'name' => 'auth-key', 'data' => 'secret-value' }])
     end
+
+    it 'joins array data values as CSV' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        options: [{ 'name' => 'domain-name-servers', 'data' => ['1.1.1.1', '8.8.8.8'] }],
+      )
+
+      expect(resource[:options]).to eq([{ 'name' => 'domain-name-servers', 'data' => '1.1.1.1, 8.8.8.8' }])
+    end
+
+    it 'escapes commas in string data values' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        options: [{ 'name' => 'boot-file-name', 'data' => 'foo,bar' }],
+      )
+
+      expect(resource[:options]).to eq([{ 'name' => 'boot-file-name', 'data' => 'foo\,bar' }])
+    end
+
+    it 'treats a single-element array data the same as a string' do
+      resource = described_class.new(
+        name: 'dhcp4',
+        lease_database: base_lease_db,
+        options: [{ 'name' => 'routers', 'data' => ['10.0.0.1'] }],
+      )
+
+      expect(resource[:options]).to eq([{ 'name' => 'routers', 'data' => '10.0.0.1' }])
+    end
   end
 
   describe 'hooks_libraries property' do

@@ -81,6 +81,50 @@ describe provider_class do
       expect(dhcp4['subnet4']).to eq([])
     end
 
+    it 'writes array data options as CSV strings' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        options: [{ 'name' => 'domain-name-servers', 'data' => ['1.1.1.1', '8.8.8.8'] }],
+        lease_database: lease_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['option-data']).to contain_exactly({ 'name' => 'domain-name-servers', 'data' => '1.1.1.1, 8.8.8.8' })
+    end
+
+    it 'escapes commas in string data options' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'dhcp4',
+        config_path: config_path,
+        options: [{ 'name' => 'boot-file-name', 'data' => 'foo,bar' }],
+        lease_database: lease_db,
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = read_config(config_path)
+      expect(config['Dhcp4']['option-data']).to contain_exactly({ 'name' => 'boot-file-name', 'data' => 'foo\,bar' })
+    end
+
     it 'writes hooks-libraries when provided' do
       write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
 

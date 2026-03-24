@@ -81,6 +81,34 @@ Puppet::Type.newtype(:kea_dhcp_v4_scope) do
         raise ArgumentError, 'Each option must be a hash containing at least name and data'
       end
     end
+
+    def insync?(is)
+      normalize(Array(is)) == normalize(Array(should))
+    end
+
+    def munge(value)
+      result = stringify_keys(value)
+      if result['data'].is_a?(Array)
+        result['data'] = result['data'].join(', ')
+      elsif result['data'].is_a?(String)
+        result['data'] = result['data'].gsub(',', '\\,')
+      end
+      result
+    end
+
+    def normalize(collection)
+      collection.map { |item| stringify_keys(item) }.map { |item| item.sort.to_h }.sort_by { |item| item.to_a }
+    end
+    private :normalize
+
+    def stringify_keys(hash)
+      return {} unless hash.respond_to?(:each)
+
+      hash.each_with_object({}) do |(key, val), acc|
+        acc[key.to_s] = val
+      end
+    end
+    private :stringify_keys
   end
 
   newproperty(:valid_lifetime) do
