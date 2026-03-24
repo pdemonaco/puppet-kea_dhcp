@@ -103,6 +103,52 @@ describe provider_class do
       ids = config['Dhcp4']['subnet4'].map { |scope| scope['id'] }
       expect(ids).to contain_exactly(2, 5)
     end
+
+    it 'writes array data options as CSV strings' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'csv_scope',
+        subnet: '10.0.0.0/24',
+        config_path: config_path,
+        options: [{ 'name' => 'domain-name-servers', 'data' => ['1.1.1.1', '8.8.8.8'] }],
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      scope = config['Dhcp4']['subnet4'].first
+      expect(scope['option-data']).to contain_exactly({ 'name' => 'domain-name-servers', 'data' => '1.1.1.1, 8.8.8.8' })
+    end
+
+    it 'escapes commas in string data options' do
+      write_config(config_path, 'Dhcp4' => { 'subnet4' => [] })
+
+      resource = type_class.new(
+        name: 'comma_scope',
+        subnet: '10.0.0.0/24',
+        config_path: config_path,
+        options: [{ 'name' => 'boot-file-name', 'data' => 'foo,bar' }],
+      )
+
+      provider = provider_class.new
+      provider.resource = resource
+      resource.provider = provider
+
+      provider.create
+      provider.flush
+      provider_class.commit_all!
+
+      config = JSON.parse(File.read(config_path))
+      scope = config['Dhcp4']['subnet4'].first
+      expect(scope['option-data']).to contain_exactly({ 'name' => 'boot-file-name', 'data' => 'foo\,bar' })
+    end
   end
 
   context 'when updating an existing scope' do

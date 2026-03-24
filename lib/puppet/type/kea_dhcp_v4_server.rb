@@ -35,7 +35,13 @@ Puppet::Type.newtype(:kea_dhcp_v4_server) do
     end
 
     def munge(value)
-      stringify_keys(value)
+      result = stringify_keys(value)
+      if result['data'].is_a?(Array)
+        result['data'] = result['data'].join(', ')
+      elsif result['data'].is_a?(String)
+        result['data'] = result['data'].gsub(',', '\\,')
+      end
+      result
     end
 
     def normalize(collection)
